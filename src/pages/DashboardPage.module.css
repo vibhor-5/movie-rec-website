@@ -1,0 +1,248 @@
+.container {
+  min-height: 100vh;
+  background-color: theme('colors.gray.50');
+  padding-bottom: theme('spacing.12');
+}
+
+.header {
+  background: linear-gradient(to right, theme('colors.blue.900'), theme('colors.blue.800'));
+  color: theme('colors.white');
+  padding: theme('spacing.16') 0;
+}
+
+.headerContent {
+  max-width: theme('screens.xl');
+  margin: 0 auto;
+  padding: 0 theme('spacing.4');
+}
+
+.title {
+  font-size: theme('fontSize.3xl');
+  font-weight: theme('fontWeight.bold');
+  margin-bottom: theme('spacing.2');
+}
+
+.subtitle {
+  font-size: theme('fontSize.xl');
+  color: theme('colors.blue.100');
+}
+
+.main {
+  max-width: theme('screens.xl');
+  margin: 0 auto;
+  padding: theme('spacing.8') theme('spacing.4');
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: theme('spacing.6');
+  margin-bottom: theme('spacing.8');
+}
+
+@media (min-width: theme('screens.md')) {
+  .statsGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.statCard {
+  background-color: theme('colors.white');
+  border-radius: theme('borderRadius.lg');
+  box-shadow: theme('boxShadow.sm');
+  padding: theme('spacing.6');
+}
+
+.statIcon {
+  background-color: theme('colors.blue.100');
+  padding: theme('spacing.3');
+  border-radius: theme('borderRadius.lg');
+}
+
+.statContent {
+  margin-left: theme('spacing.4');
+}
+
+.statLabel {
+  font-size: theme('fontSize.sm');
+  font-weight: theme('fontWeight.medium');
+  color: theme('colors.gray.500');
+}
+
+.statValue {
+  font-size: theme('fontSize.2xl');
+  font-weight: theme('fontWeight.semibold');
+  color: theme('colors.gray.900');
+}
+
+.algorithmCard {
+  background-color: theme('colors.white');
+  border-radius: theme('borderRadius.lg');
+  box-shadow: theme('boxShadow.sm');
+  padding: theme('spacing.6');
+  margin-bottom: theme('spacing.8');
+}
+
+.algorithmHeader {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: theme('spacing.4');
+}
+
+.algorithmTitle {
+  font-size: theme('fontSize.lg');
+  font-weight: theme('fontWeight.medium');
+  color: theme('colors.gray.900');
+}
+
+.detailsButton {
+  font-size: theme('fontSize.sm');
+  color: theme('colors.blue.800');
+}
+
+.detailsButton:hover {
+  color: theme('colors.blue.900');
+}
+
+.algorithmButtons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: theme('spacing.3');
+}
+
+.algorithmButton {
+  padding: theme('spacing.2') theme('spacing.4');
+  border-radius: theme('borderRadius.lg');
+  transition: all 0.2s;
+}
+
+.algorithmButton.active {
+  background-color: theme('colors.blue.800');
+  color: theme('colors.white');
+}
+
+.algorithmButton.inactive {
+  background-color: theme('colors.white');
+  border: 1px solid theme('colors.gray.300');
+  color: theme('colors.gray.700');
+}
+
+.algorithmButton.inactive:hover {
+  background-color: theme('colors.gray.50');
+}
+
+.algorithmDetails {
+  margin-top: theme('spacing.4');
+  padding: theme('spacing.4');
+  background-color: theme('colors.gray.50');
+  border-radius: theme('borderRadius.lg');
+}
+
+.recommendationsCard {
+  background-color: theme('colors.white');
+  border-radius: theme('borderRadius.lg');
+  box-shadow: theme('boxShadow.sm');
+  overflow: hidden;
+}
+
+.recommendationsContent {
+  padding: theme('spacing.6');
+}
+
+.recommendationsTitle {
+  font-size: theme('fontSize.lg');
+  font-weight: theme('fontWeight.medium');
+  color: theme('colors.gray.900');
+  margin-bottom: theme('spacing.4');
+}
+
+.recentlyWatchedCard {
+  background-color: theme('colors.white');
+  border-radius: theme('borderRadius.lg');
+  box-shadow: theme('boxShadow.sm');
+  overflow: hidden;
+  margin-top: theme('spacing.8');
+}
+
+.recentlyWatchedContent {
+  padding: theme('spacing.6');
+}
+
+.recentlyWatchedTitle {
+  font-size: theme('fontSize.lg');
+  font-weight: theme('fontWeight.medium');
+  color: theme('colors.gray.900');
+  margin-bottom: theme('spacing.4');
+}
+
+.movieGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: theme('spacing.6');
+}
+
+@media (min-width: theme('screens.sm')) {
+  .movieGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: theme('screens.md')) {
+  .movieGrid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: theme('screens.lg')) {
+  .movieGrid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.movieCard {
+  background-color: theme('colors.gray.50');
+  border-radius: theme('borderRadius.lg');
+  padding: theme('spacing.4');
+}
+
+.moviePoster {
+  aspect-ratio: 2/3;
+  background-color: theme('colors.gray.200');
+  border-radius: theme('borderRadius.lg');
+  margin-bottom: theme('spacing.3');
+}
+
+.movieTitle {
+  font-weight: theme('fontWeight.medium');
+  color: theme('colors.gray.900');
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.movieRating {
+  display: flex;
+  align-items: center;
+  margin-top: theme('spacing.2');
+}
+
+.starIcon {
+  height: theme('spacing.4');
+  width: theme('spacing.4');
+}
+
+.starIcon.filled {
+  color: theme('colors.yellow.400');
+  fill: currentColor;
+}
+
+.starIcon.empty {
+  color: theme('colors.gray.300');
+}
+
+.watchDate {
+  margin-left: theme('spacing.2');
+  font-size: theme('fontSize.xs');
+  color: theme('colors.gray.500');
+} 

@@ -1,0 +1,193 @@
+.container {
+  min-height: 100vh;
+  background-color: theme('colors.gray.50');
+  padding-bottom: theme('spacing.12');
+}
+
+.header {
+  background: linear-gradient(to right, theme('colors.blue.900'), theme('colors.blue.800'));
+  color: theme('colors.white');
+  padding: theme('spacing.16') 0;
+}
+
+.headerContent {
+  max-width: theme('screens.7xl');
+  margin: 0 auto;
+  padding: 0 theme('spacing.4');
+}
+
+.title {
+  font-size: theme('fontSize.3xl');
+  font-weight: theme('fontWeight.bold');
+  margin-bottom: theme('spacing.2');
+}
+
+.subtitle {
+  font-size: theme('fontSize.xl');
+  color: theme('colors.blue.100');
+}
+
+.main {
+  max-width: theme('screens.7xl');
+  margin: 0 auto;
+  padding: theme('spacing.8') theme('spacing.4');
+}
+
+.searchContainer {
+  background-color: theme('colors.white');
+  border-radius: theme('borderRadius.lg');
+  box-shadow: theme('boxShadow.sm');
+  overflow: hidden;
+  margin-bottom: theme('spacing.8');
+}
+
+.searchContent {
+  padding: theme('spacing.6');
+}
+
+.searchInput {
+  position: relative;
+  flex-grow: 1;
+}
+
+.searchIcon {
+  position: absolute;
+  left: theme('spacing.3');
+  top: 50%;
+  transform: translateY(-50%);
+  color: theme('colors.gray.400');
+}
+
+.input {
+  width: 100%;
+  padding-left: theme('spacing.10');
+  padding-right: theme('spacing.3');
+  padding-top: theme('spacing.2');
+  padding-bottom: theme('spacing.2');
+  border: 1px solid theme('colors.gray.300');
+  border-radius: theme('borderRadius.md');
+  background-color: theme('colors.white');
+  font-size: theme('fontSize.sm');
+  line-height: theme('lineHeight.5');
+}
+
+.input:focus {
+  outline: none;
+  border-color: theme('colors.blue.500');
+  box-shadow: 0 0 0 1px theme('colors.blue.500');
+}
+
+.filterButton {
+  display: inline-flex;
+  align-items: center;
+  padding: theme('spacing.2') theme('spacing.4');
+  border: 1px solid theme('colors.gray.300');
+  border-radius: theme('borderRadius.md');
+  background-color: theme('colors.white');
+  color: theme('colors.gray.700');
+  font-size: theme('fontSize.sm');
+  font-weight: theme('fontWeight.medium');
+  box-shadow: theme('boxShadow.sm');
+}
+
+.filterButton:hover {
+  background-color: theme('colors.gray.50');
+}
+
+.filterButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px theme('colors.blue.500');
+}
+
+.sortButton {
+  display: inline-flex;
+  align-items: center;
+  padding: theme('spacing.2') theme('spacing.4');
+  border: none;
+  border-radius: theme('borderRadius.md');
+  background-color: theme('colors.blue.800');
+  color: theme('colors.white');
+  font-size: theme('fontSize.sm');
+  font-weight: theme('fontWeight.medium');
+  box-shadow: theme('boxShadow.sm');
+}
+
+.sortButton:hover {
+  background-color: theme('colors.blue.900');
+}
+
+.sortButton:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px theme('colors.blue.500');
+}
+
+.advancedFilters {
+  margin-top: theme('spacing.4');
+  padding: theme('spacing.4');
+  background-color: theme('colors.gray.50');
+  border-radius: theme('borderRadius.lg');
+}
+
+.filterGrid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: theme('spacing.4');
+}
+
+@media (min-width: theme('screens.md')) {
+  .filterGrid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.filterGroup {
+  margin-bottom: theme('spacing.4');
+}
+
+.filterLabel {
+  display: block;
+  font-size: theme('fontSize.sm');
+  font-weight: theme('fontWeight.medium');
+  color: theme('colors.gray.700');
+  margin-bottom: theme('spacing.1');
+}
+
+.filterInput {
+  width: 100%;
+  padding: theme('spacing.2') theme('spacing.3');
+  border: 1px solid theme('colors.gray.300');
+  border-radius: theme('borderRadius.md');
+  background-color: theme('colors.white');
+  font-size: theme('fontSize.sm');
+}
+
+.filterInput:focus {
+  outline: none;
+  border-color: theme('colors.blue.500');
+  box-shadow: 0 0 0 1px theme('colors.blue.500');
+}
+
+.movieGrid {
+  background-color: theme('colors.white');
+  border-radius: theme('borderRadius.lg');
+  box-shadow: theme('boxShadow.sm');
+  overflow: hidden;
+}
+
+.movieGridContent {
+  padding: theme('spacing.6');
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--background);
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: 1rem 0;
+  }
+} 

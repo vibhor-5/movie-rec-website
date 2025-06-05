@@ -1,0 +1,101 @@
+.button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 0.375rem;
+  font-weight: 500;
+  transition: all 0.2s;
+  cursor: pointer;
+  border: none;
+  outline: none;
+}
+
+.button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Variants */
+.primary {
+  background-color: #4299e1;
+  color: white;
+}
+
+.primary:hover:not(:disabled) {
+  background-color: #3182ce;
+}
+
+.secondary {
+  background-color: #718096;
+  color: white;
+}
+
+.secondary:hover:not(:disabled) {
+  background-color: #4a5568;
+}
+
+.outline {
+  background-color: transparent;
+  border: 1px solid #4a5568;
+  color: #4a5568;
+}
+
+.outline:hover:not(:disabled) {
+  background-color: #4a5568;
+  color: white;
+}
+
+.ghost {
+  background-color: transparent;
+  color: #4a5568;
+}
+
+.ghost:hover:not(:disabled) {
+  background-color: #f7fafc;
+}
+
+/* Sizes */
+.sm {
+  padding: 0.5rem 1rem;
+  font-size: 0.875rem;
+}
+
+.md {
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+}
+
+.lg {
+  padding: 1rem 2rem;
+  font-size: 1.125rem;
+}
+
+/* Full width */
+.fullWidth {
+  width: 100%;
+}
+
+/* Loading state */
+.loading {
+  position: relative;
+  color: transparent;
+}
+
+.spinner {
+  position: absolute;
+  width: 1rem;
+  height: 1rem;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.75s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+} 

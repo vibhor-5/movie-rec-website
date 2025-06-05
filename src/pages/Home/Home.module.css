@@ -1,0 +1,32 @@
+.container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.main {
+  flex: 1;
+  padding: 2rem 0;
+}
+
+.hero {
+  margin-bottom: 3rem;
+}
+
+.loadingContainer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  background-color: var(--background);
+}
+
+@media (max-width: 768px) {
+  .main {
+    padding: 1rem 0;
+  }
+
+  .hero {
+    margin-bottom: 2rem;
+  }
+} 

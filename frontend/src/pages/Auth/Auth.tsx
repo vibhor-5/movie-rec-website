@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuthContext } from '../../contexts/AuthContext';
 import LoginForm from '../../components/auth/LoginForm/LoginForm';
 import RegisterForm from '../../components/auth/RegisterForm/RegisterForm';
@@ -10,53 +10,63 @@ const Auth: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [toasts, setToasts] = useState<Toast[]>([]);
   const navigate = useNavigate();
+  const location = useLocation();
   const { login, register } = useAuthContext();
+
+  const from = location.state?.from?.pathname || '/onboarding';
 
   const handleLogin = async (data: { email: string; password: string }) => {
     try {
-      await login(data.email, data.password);
-      addToast({
-        type: 'success',
-        message: 'Successfully logged in!'
-      });
-      navigate('/');
+      const success = await login(data.email, data.password);
+      if (success) {
+        addToast({
+          type: 'success',
+          message: 'Successfully logged in!',
+          duration: 3000
+        });
+        navigate(from, { replace: true });
+      }
     } catch (error) {
       addToast({
         type: 'error',
-        message: 'Failed to login. Please try again.'
+        message: 'Failed to login. Please check your credentials.',
+        duration: 5000
       });
     }
   };
 
   const handleRegister = async (data: { name: string; email: string; password: string; confirmPassword: string }) => {
     try {
-      await register(data.name, data.email, data.password);
-      addToast({
-        type: 'success',
-        message: 'Successfully registered! Please login.'
-      });
-      setIsLogin(true);
+      const success = await register(data.name, data.email, data.password);
+      if (success) {
+        addToast({
+          type: 'success',
+          message: 'Account created successfully! Welcome aboard!',
+          duration: 3000
+        });
+        navigate('/onboarding', { replace: true });
+      }
     } catch (error) {
       addToast({
         type: 'error',
-        message: 'Failed to register. Please try again.'
+        message: 'Failed to create account. Please try again.',
+        duration: 5000
       });
     }
   };
 
   const handleSocialAuth = async (provider: 'google' | 'facebook') => {
     try {
-      // TODO: Implement social authentication
-      console.log('Social auth attempt:', provider);
-      
       addToast({
         type: 'info',
-        message: `${provider} authentication coming soon!`
+        message: `${provider.charAt(0).toUpperCase() + provider.slice(1)} authentication coming soon!`,
+        duration: 3000
       });
     } catch (error) {
       addToast({
         type: 'error',
-        message: 'Social authentication failed. Please try again.'
+        message: 'Social authentication failed. Please try again.',
+        duration: 5000
       });
     }
   };
@@ -70,6 +80,11 @@ const Auth: React.FC = () => {
     setToasts(prev => prev.filter(toast => toast.id !== id));
   };
 
+  const toggleAuthMode = () => {
+    setIsLogin(!isLogin);
+    setToasts([]); // Clear any existing toasts when switching modes
+  };
+
   return (
     <div className={styles.container}>
       <div className={styles.content}>
@@ -77,11 +92,13 @@ const Auth: React.FC = () => {
           <LoginForm
             onLogin={handleLogin}
             onSocialLogin={handleSocialAuth}
+            onToggleMode={toggleAuthMode}
           />
         ) : (
           <RegisterForm
             onRegister={handleRegister}
             onSocialRegister={handleSocialAuth}
+            onToggleMode={toggleAuthMode}
           />
         )}
       </div>
@@ -93,4 +110,4 @@ const Auth: React.FC = () => {
   );
 };
 
-export default Auth; 
+export default Auth;

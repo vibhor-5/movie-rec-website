@@ -1,10 +1,16 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuthContext } from '../../../contexts/AuthContext';
 import styles from './Header.module.css';
 
 const Header: React.FC = () => {
   const { user, isAuthenticated, logout } = useAuthContext();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
 
   return (
     <header className={styles.header}>
@@ -15,22 +21,32 @@ const Header: React.FC = () => {
         
         <nav className={styles.nav}>
           <Link to="/" className={styles.navLink}>Home</Link>
-          <Link to="/discover" className={styles.navLink}>Discover</Link>
+          <Link to="/movies" className={styles.navLink}>Movies</Link>
           <Link to="/educational" className={styles.navLink}>Learn</Link>
+          {isAuthenticated && (
+            <Link to="/dashboard" className={styles.navLink}>Dashboard</Link>
+          )}
         </nav>
 
-        <div className={styles.auth}>
+        <div className={styles.userSection}>
           {isAuthenticated ? (
             <div className={styles.userMenu}>
-              <span className={styles.userName}>{user?.name}</span>
-              <button onClick={logout} className={styles.logoutButton}>
+              <Link to="/profile" className={styles.profileLink}>
+                {user?.name || 'Profile'}
+              </Link>
+              <button onClick={handleLogout} className={styles.logoutButton}>
                 Logout
               </button>
             </div>
           ) : (
-            <Link to="/auth" className={styles.loginButton}>
-              Login
-            </Link>
+            <div className={styles.authButtons}>
+              <Link to="/auth" className={styles.loginButton}>
+                Login
+              </Link>
+              <Link to="/auth" className={styles.registerButton}>
+                Get Started
+              </Link>
+            </div>
           )}
         </div>
       </div>
@@ -38,4 +54,4 @@ const Header: React.FC = () => {
   );
 };
 
-export default Header; 
+export default Header;

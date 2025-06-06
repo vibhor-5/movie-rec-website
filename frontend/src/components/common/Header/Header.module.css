@@ -6,6 +6,7 @@
   left: 0;
   right: 0;
   z-index: 1000;
+  height: 80px;
 }
 
 .container {
@@ -15,6 +16,7 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 100%;
 }
 
 .logo {
@@ -55,6 +57,11 @@
   color: #4a5568;
   text-decoration: none;
   font-weight: 500;
+  transition: color 0.2s;
+}
+
+.profileLink:hover {
+  color: #2d3748;
 }
 
 .logoutButton {
@@ -64,6 +71,7 @@
   border: none;
   border-radius: 0.375rem;
   cursor: pointer;
+  font-weight: 500;
   transition: background-color 0.2s;
 }
 
@@ -83,16 +91,21 @@
   text-decoration: none;
   font-weight: 500;
   transition: all 0.2s;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .loginButton {
   color: #4a5568;
   border: 1px solid #4a5568;
+  background: transparent;
 }
 
 .registerButton {
   background-color: #4299e1;
   color: white;
+  border: 1px solid #4299e1;
 }
 
 .loginButton:hover {
@@ -102,4 +115,25 @@
 
 .registerButton:hover {
   background-color: #3182ce;
-} 
+  border-color: #3182ce;
+}
+
+@media (max-width: 768px) {
+  .nav {
+    display: none;
+  }
+  
+  .container {
+    padding: 0.5rem 1rem;
+  }
+  
+  .authButtons {
+    gap: 0.5rem;
+  }
+  
+  .loginButton,
+  .registerButton {
+    padding: 0.375rem 0.75rem;
+    font-size: 0.875rem;
+  }
+}

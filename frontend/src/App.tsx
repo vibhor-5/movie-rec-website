@@ -4,6 +4,7 @@ import { AuthProvider } from './contexts/AuthContext';
 import ProtectedRoute from './components/auth/ProtectedRoute';
 import Header from './components/common/Header/Header';
 import Footer from './components/common/Footer/Footer';
+import Landing from './pages/Landing/Landing';
 import Home from './pages/Home/Home';
 import Movies from './pages/Movies/Movies';
 import Auth from './pages/Auth/Auth';
@@ -16,9 +17,10 @@ import styles from './App.module.css';
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const location = useLocation();
-  // Hide Header/Footer on Auth, Onboarding, and NotFound pages
+  // Hide Header/Footer on Auth, Onboarding, Landing, and NotFound pages
   const hideLayout = location.pathname.startsWith('/auth') || 
                      location.pathname === '/onboarding' || 
+                     location.pathname === '/' ||
                      location.pathname === '/404';
   
   return (
@@ -38,7 +40,8 @@ const App: React.FC = () => {
       <Router>
         <Layout>
           <Routes>
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<Landing />} />
+            <Route path="/home" element={<Home />} />
             <Route path="/movies" element={<Movies />} />
             <Route path="/educational" element={<EducationalPage />} />
             <Route path="/dashboard" element={

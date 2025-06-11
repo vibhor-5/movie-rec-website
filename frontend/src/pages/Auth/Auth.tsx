@@ -13,7 +13,7 @@ const Auth: React.FC = () => {
   const location = useLocation();
   const { login, register } = useAuthContext();
 
-  const from = location.state?.from?.pathname || '/onboarding';
+  const from = location.state?.from?.pathname || '/home';
 
   const handleLogin = async (data: { email: string; password: string }) => {
     try {

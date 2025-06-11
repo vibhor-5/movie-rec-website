@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Star, Search } from 'lucide-react';
+import { Star, Search, ChevronRight } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner/LoadingSpinner';
 import styles from './Onboarding.module.css';
 
@@ -10,6 +10,8 @@ interface Movie {
   year: number;
   poster: string;
   genres: string[];
+  rating: number;
+  popularity: number;
 }
 
 interface MovieRating {
@@ -17,30 +19,34 @@ interface MovieRating {
   rating: number;
 }
 
-const MOCK_MOVIES: Movie[] = [
-  { id: 1, title: 'The Shawshank Redemption', year: 1994, poster: 'https://images.pexels.com/photos/5662857/pexels-photo-5662857.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama'] },
-  { id: 2, title: 'The Godfather', year: 1972, poster: 'https://images.pexels.com/photos/7234243/pexels-photo-7234243.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Crime', 'Drama'] },
-  { id: 3, title: 'The Dark Knight', year: 2008, poster: 'https://images.pexels.com/photos/8118880/pexels-photo-8118880.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Crime'] },
-  { id: 4, title: 'Pulp Fiction', year: 1994, poster: 'https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Crime', 'Drama'] },
-  { id: 5, title: 'Forrest Gump', year: 1994, poster: 'https://images.pexels.com/photos/2549565/pexels-photo-2549565.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Romance'] },
-  { id: 6, title: 'Inception', year: 2010, poster: 'https://images.pexels.com/photos/8118890/pexels-photo-8118890.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'] },
-  { id: 7, title: 'The Matrix', year: 1999, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'] },
-  { id: 8, title: 'Goodfellas', year: 1990, poster: 'https://images.pexels.com/photos/3137890/pexels-photo-3137890.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Crime', 'Drama'] },
-  { id: 9, title: 'The Lord of the Rings', year: 2001, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Adventure', 'Fantasy'] },
-  { id: 10, title: 'Star Wars', year: 1977, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'] },
-  { id: 11, title: 'Casablanca', year: 1942, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Romance'] },
-  { id: 12, title: 'Citizen Kane', year: 1941, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama'] },
-  { id: 13, title: 'Titanic', year: 1997, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Romance'] },
-  { id: 14, title: 'Jurassic Park', year: 1993, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Adventure'] },
-  { id: 15, title: 'Avatar', year: 2009, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'] },
-  { id: 16, title: 'The Avengers', year: 2012, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Adventure'] },
-  { id: 17, title: 'Toy Story', year: 1995, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'] },
-  { id: 18, title: 'Finding Nemo', year: 2003, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'] },
-  { id: 19, title: 'The Lion King', year: 1994, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'] },
-  { id: 20, title: 'Frozen', year: 2013, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'] }
+const POPULAR_MOVIES: Movie[] = [
+  { id: 1, title: 'The Shawshank Redemption', year: 1994, poster: 'https://images.pexels.com/photos/5662857/pexels-photo-5662857.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama'], rating: 9.3, popularity: 95 },
+  { id: 2, title: 'The Godfather', year: 1972, poster: 'https://images.pexels.com/photos/7234243/pexels-photo-7234243.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Crime', 'Drama'], rating: 9.2, popularity: 92 },
+  { id: 3, title: 'The Dark Knight', year: 2008, poster: 'https://images.pexels.com/photos/8118880/pexels-photo-8118880.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Crime'], rating: 9.0, popularity: 98 },
+  { id: 4, title: 'Pulp Fiction', year: 1994, poster: 'https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Crime', 'Drama'], rating: 8.9, popularity: 89 },
+  { id: 5, title: 'Forrest Gump', year: 1994, poster: 'https://images.pexels.com/photos/2549565/pexels-photo-2549565.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Romance'], rating: 8.8, popularity: 94 },
+  { id: 6, title: 'Inception', year: 2010, poster: 'https://images.pexels.com/photos/8118890/pexels-photo-8118890.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'], rating: 8.8, popularity: 96 },
+  { id: 7, title: 'The Matrix', year: 1999, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'], rating: 8.7, popularity: 91 },
+  { id: 8, title: 'Goodfellas', year: 1990, poster: 'https://images.pexels.com/photos/3137890/pexels-photo-3137890.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Crime', 'Drama'], rating: 8.7, popularity: 85 },
+  { id: 9, title: 'The Lord of the Rings: The Fellowship of the Ring', year: 2001, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Adventure', 'Fantasy'], rating: 8.8, popularity: 93 },
+  { id: 10, title: 'Star Wars: Episode IV - A New Hope', year: 1977, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'], rating: 8.6, popularity: 97 },
+  { id: 11, title: 'Casablanca', year: 1942, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Romance'], rating: 8.5, popularity: 78 },
+  { id: 12, title: 'Citizen Kane', year: 1941, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama'], rating: 8.3, popularity: 72 },
+  { id: 13, title: 'Titanic', year: 1997, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Romance'], rating: 7.8, popularity: 99 },
+  { id: 14, title: 'Jurassic Park', year: 1993, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Adventure'], rating: 8.1, popularity: 95 },
+  { id: 15, title: 'Avatar', year: 2009, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'], rating: 7.8, popularity: 97 },
+  { id: 16, title: 'The Avengers', year: 2012, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Adventure'], rating: 8.0, popularity: 98 },
+  { id: 17, title: 'Toy Story', year: 1995, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'], rating: 8.3, popularity: 88 },
+  { id: 18, title: 'Finding Nemo', year: 2003, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'], rating: 8.2, popularity: 90 },
+  { id: 19, title: 'The Lion King', year: 1994, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'], rating: 8.5, popularity: 92 },
+  { id: 20, title: 'Frozen', year: 2013, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'], rating: 7.4, popularity: 96 },
+  { id: 21, title: 'Interstellar', year: 2014, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Sci-Fi'], rating: 8.6, popularity: 89 },
+  { id: 22, title: 'Parasite', year: 2019, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Thriller'], rating: 8.6, popularity: 87 },
+  { id: 23, title: 'Spider-Man: Into the Spider-Verse', year: 2018, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Action'], rating: 8.4, popularity: 91 },
+  { id: 24, title: 'Black Panther', year: 2018, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Adventure'], rating: 7.3, popularity: 94 }
 ];
 
-const GENRES = ['All', 'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Drama', 'Family', 'Fantasy', 'Romance', 'Sci-Fi'];
+const GENRES = ['All', 'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Drama', 'Family', 'Fantasy', 'Romance', 'Sci-Fi', 'Thriller'];
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
@@ -62,8 +68,10 @@ const Onboarding: React.FC = () => {
     // Simulate loading movies
     setIsLoading(true);
     setTimeout(() => {
-      setMovies(MOCK_MOVIES);
-      setFilteredMovies(MOCK_MOVIES);
+      // Sort by popularity for better initial display
+      const sortedMovies = [...POPULAR_MOVIES].sort((a, b) => b.popularity - a.popularity);
+      setMovies(sortedMovies);
+      setFilteredMovies(sortedMovies);
       setIsLoading(false);
     }, 1000);
   }, []);
@@ -110,7 +118,7 @@ const Onboarding: React.FC = () => {
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
-      // Complete onboarding
+      // Complete onboarding and redirect to dashboard
       navigate('/dashboard');
     }
   };
@@ -121,31 +129,45 @@ const Onboarding: React.FC = () => {
 
   const renderWelcomeStep = () => (
     <div className={styles.stepContent}>
-      <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-        <div style={{ fontSize: '4rem', marginBottom: '2rem' }}>🎬</div>
-        <h2 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#2d3748' }}>
+      <div className={styles.welcomeContainer}>
+        <div className={styles.welcomeIcon}>🎬</div>
+        <h2 className={styles.welcomeTitle}>
           Welcome to MovieRec!
         </h2>
-        <p style={{ fontSize: '1.125rem', color: '#4a5568', marginBottom: '2rem', maxWidth: '600px', margin: '0 auto 2rem' }}>
+        <p className={styles.welcomeDescription}>
           We're excited to help you discover amazing movies! To get started, we need to learn about your taste in films.
         </p>
-        <div style={{ background: '#f7fafc', padding: '2rem', borderRadius: '1rem', marginBottom: '2rem' }}>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: '#2d3748' }}>
+        <div className={styles.processCard}>
+          <h3 className={styles.processTitle}>
             Here's how it works:
           </h3>
-          <div style={{ textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}>
-            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
-              <span style={{ background: '#4299e1', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '1rem', fontSize: '0.875rem', fontWeight: 'bold' }}>1</span>
-              <span>Rate movies you've watched (at least 10)</span>
+          <div className={styles.processSteps}>
+            <div className={styles.processStep}>
+              <span className={styles.processNumber}>1</span>
+              <span>Rate popular movies you've watched</span>
             </div>
-            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
-              <span style={{ background: '#4299e1', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '1rem', fontSize: '0.875rem', fontWeight: 'bold' }}>2</span>
+            <div className={styles.processStep}>
+              <span className={styles.processNumber}>2</span>
               <span>Tell us your preferences</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <span style={{ background: '#4299e1', color: 'white', borderRadius: '50%', width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', marginRight: '1rem', fontSize: '0.875rem', fontWeight: 'bold' }}>3</span>
+            <div className={styles.processStep}>
+              <span className={styles.processNumber}>3</span>
               <span>Get personalized recommendations!</span>
             </div>
+          </div>
+        </div>
+        <div className={styles.welcomeStats}>
+          <div className={styles.statItem}>
+            <div className={styles.statNumber}>10,000+</div>
+            <div className={styles.statLabel}>Movies in our database</div>
+          </div>
+          <div className={styles.statItem}>
+            <div className={styles.statNumber}>3</div>
+            <div className={styles.statLabel}>Recommendation algorithms</div>
+          </div>
+          <div className={styles.statItem}>
+            <div className={styles.statNumber}>95%</div>
+            <div className={styles.statLabel}>User satisfaction rate</div>
           </div>
         </div>
       </div>
@@ -155,15 +177,14 @@ const Onboarding: React.FC = () => {
   const renderMovieRatingStep = () => (
     <div className={styles.stepContent}>
       <div className={styles.searchContainer}>
-        <div style={{ position: 'relative', flex: 1, minWidth: '300px' }}>
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+        <div className={styles.searchInputWrapper}>
+          <Search className={styles.searchIcon} />
           <input
             type="text"
             placeholder="Search for movies..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className={styles.searchInput}
-            style={{ paddingLeft: '2.5rem' }}
           />
         </div>
         <div className={styles.filterButtons}>
@@ -195,18 +216,31 @@ const Onboarding: React.FC = () => {
               key={movie.id}
               className={`${styles.movieCard} ${getMovieRating(movie.id) > 0 ? styles.selected : ''}`}
             >
-              <img
-                src={movie.poster}
-                alt={movie.title}
-                className={styles.moviePoster}
-                onError={(e) => {
-                  const target = e.target as HTMLImageElement;
-                  target.src = 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300';
-                }}
-              />
+              <div className={styles.moviePosterContainer}>
+                <img
+                  src={movie.poster}
+                  alt={movie.title}
+                  className={styles.moviePoster}
+                  onError={(e) => {
+                    const target = e.target as HTMLImageElement;
+                    target.src = 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300';
+                  }}
+                />
+                <div className={styles.movieOverlay}>
+                  <div className={styles.movieRating}>
+                    <Star className={styles.imdbStar} />
+                    <span>{movie.rating}</span>
+                  </div>
+                </div>
+              </div>
               <div className={styles.movieInfo}>
                 <h3 className={styles.movieTitle}>{movie.title}</h3>
-                <p className={styles.movieYear}>{movie.year}</p>
+                <div className={styles.movieMeta}>
+                  <span className={styles.movieYear}>{movie.year}</span>
+                  <span className={styles.movieGenres}>
+                    {movie.genres.slice(0, 2).join(', ')}
+                  </span>
+                </div>
                 <div className={styles.ratingContainer}>
                   {[1, 2, 3, 4, 5].map(star => (
                     <Star
@@ -225,36 +259,62 @@ const Onboarding: React.FC = () => {
     </div>
   );
 
-  const renderPreferencesStep = () => (
+  const renderCompletionStep = () => (
     <div className={styles.stepContent}>
-      <div style={{ textAlign: 'center', padding: '3rem 0' }}>
-        <div style={{ fontSize: '3rem', marginBottom: '2rem' }}>🎯</div>
-        <h2 style={{ fontSize: '2rem', marginBottom: '1rem', color: '#2d3748' }}>
+      <div className={styles.completionContainer}>
+        <div className={styles.completionIcon}>🎯</div>
+        <h2 className={styles.completionTitle}>
           Perfect! You've rated {ratedMoviesCount} movies
         </h2>
-        <p style={{ fontSize: '1.125rem', color: '#4a5568', marginBottom: '2rem' }}>
+        <p className={styles.completionDescription}>
           Our algorithm is now learning your preferences. You can fine-tune your recommendations anytime in your profile settings.
         </p>
-        <div style={{ background: '#f0fff4', border: '1px solid #9ae6b4', padding: '2rem', borderRadius: '1rem', marginBottom: '2rem' }}>
-          <h3 style={{ fontSize: '1.25rem', marginBottom: '1rem', color: '#22543d' }}>
+        <div className={styles.completionCard}>
+          <h3 className={styles.completionCardTitle}>
             What happens next?
           </h3>
-          <div style={{ textAlign: 'left', maxWidth: '500px', margin: '0 auto' }}>
-            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
-              <span style={{ color: '#22c55e', marginRight: '0.5rem' }}>✓</span>
+          <div className={styles.completionSteps}>
+            <div className={styles.completionStep}>
+              <span className={styles.checkmark}>✓</span>
               <span>We'll analyze your ratings to understand your taste</span>
             </div>
-            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
-              <span style={{ color: '#22c55e', marginRight: '0.5rem' }}>✓</span>
+            <div className={styles.completionStep}>
+              <span className={styles.checkmark}>✓</span>
               <span>Find users with similar preferences</span>
             </div>
-            <div style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center' }}>
-              <span style={{ color: '#22c55e', marginRight: '0.5rem' }}>✓</span>
+            <div className={styles.completionStep}>
+              <span className={styles.checkmark}>✓</span>
               <span>Generate personalized recommendations</span>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center' }}>
-              <span style={{ color: '#22c55e', marginRight: '0.5rem' }}>✓</span>
+            <div className={styles.completionStep}>
+              <span className={styles.checkmark}>✓</span>
               <span>Show you how our algorithms work</span>
+            </div>
+          </div>
+        </div>
+        <div className={styles.algorithmPreview}>
+          <h3 className={styles.algorithmPreviewTitle}>Your Taste Profile</h3>
+          <div className={styles.tasteProfile}>
+            <div className={styles.tasteItem}>
+              <span className={styles.tasteLabel}>Preferred Genres</span>
+              <div className={styles.tasteGenres}>
+                {['Drama', 'Sci-Fi', 'Action'].map(genre => (
+                  <span key={genre} className={styles.tasteGenre}>{genre}</span>
+                ))}
+              </div>
+            </div>
+            <div className={styles.tasteItem}>
+              <span className={styles.tasteLabel}>Average Rating</span>
+              <span className={styles.tasteValue}>
+                {ratedMoviesCount > 0 
+                  ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
+                  : '0.0'
+                } / 5.0
+              </span>
+            </div>
+            <div className={styles.tasteItem}>
+              <span className={styles.tasteLabel}>Movies Rated</span>
+              <span className={styles.tasteValue}>{ratedMoviesCount}</span>
             </div>
           </div>
         </div>
@@ -269,7 +329,7 @@ const Onboarding: React.FC = () => {
       case 2:
         return renderMovieRatingStep();
       case 3:
-        return renderPreferencesStep();
+        return renderCompletionStep();
       default:
         return renderWelcomeStep();
     }
@@ -280,7 +340,7 @@ const Onboarding: React.FC = () => {
       case 1:
         return 'Let\'s Get Started';
       case 2:
-        return 'Rate Some Movies';
+        return 'Rate Popular Movies';
       case 3:
         return 'You\'re All Set!';
       default:
@@ -352,7 +412,17 @@ const Onboarding: React.FC = () => {
                 className={styles.continueButton}
                 disabled={currentStep === 2 && !canContinue}
               >
-                {currentStep === totalSteps ? 'Get Started!' : 'Continue'}
+                {currentStep === totalSteps ? (
+                  <>
+                    Get Started!
+                    <ChevronRight className={styles.buttonIcon} />
+                  </>
+                ) : (
+                  <>
+                    Continue
+                    <ChevronRight className={styles.buttonIcon} />
+                  </>
+                )}
               </button>
             </div>
           </div>

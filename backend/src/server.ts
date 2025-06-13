@@ -3,6 +3,7 @@ import cors from "cors";
 import dotenv from "dotenv";
 import { PrismaClient } from './generated/prisma';
 import authRoutes from './routes/authRoutes';
+import onboardingRoutes from './routes/onboardingRoutes'
 
 dotenv.config();
 
@@ -13,19 +14,8 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }))
 
-app.get("/", (req, res) => {
-    res.json({
-        message: "Hello World"
-    });
-});
-
-app.get("/users", async (req, res) => {
-    const users = await prisma.user.findMany();
-    res.json(users);
-});
-
 app.use('/api/auth', authRoutes);
-
+app.use("/", onboardingRoutes)
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);

@@ -13,7 +13,7 @@ export interface ExternalIDsResponse {
     imdb_id?: string;
 }
 
-export type Movie = {
+export interface Movie  {
     id: number;
     title?: string;
     name?: string;
@@ -23,7 +23,7 @@ export type Movie = {
     poster_path?: string;
 };
 
-export type TransformedMovie = {
+export interface TransformedMovie  {
     tmdbId: number;
     title: string | null;
     genre_ids: number[];

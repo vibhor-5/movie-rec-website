@@ -92,7 +92,6 @@ export const searchMulti = async (query: string, page = 1) => {
     }
 };
 
-
 export const getMovieDetails = async (tmdbId: number) => {
     try {
         const res = await safeGet<TMDBResult>(`/movie/${tmdbId}`);

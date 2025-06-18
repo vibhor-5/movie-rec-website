@@ -5,10 +5,18 @@ from abc import ABC, abstractmethod
 class RecommenderModel(ABC):
 
     @abstractmethod
-    def build(self):
+    def build(self,config: dict):
         """
         Build the model architecture.
         This method should be implemented by subclasses to define the model structure.
+        """
+        pass
+
+    @abstractmethod
+    def train_epoch(self,train_loader: pl.DataFrame, val_loader: pl.DataFrame | None = None):
+        """
+        Train the model for one epoch.
+        This method should be implemented by subclasses to define the training logic for a single epoch.
         """
         pass
 

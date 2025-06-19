@@ -1,4 +1,4 @@
-
+from datetime import datetime
 import os
 from base.base_model import RecommenderModel
 from models.matrix_factorisation.model import MatrixFactorizationModel
@@ -98,7 +98,8 @@ class MatrixFactorizationTrainer(RecommenderModel):
                             'val_loss_avg': val_metrics['val_loss_avg'],
                             'epoch': epoch+1})
                 # Save model checkpoint
-                self.save(f"{self.checkpoints_dir}/{self.model_name}_model_epoch_{epoch+1}_loss_{avg_epoch_loss}.pth")
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                self.save(f"{self.checkpoints_dir}/{self.model_name}_model_epoch_{epoch+1}_{timestamp}.pth")
 
         wandb.finish()
 

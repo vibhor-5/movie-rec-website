@@ -1,6 +1,6 @@
-import polars as pl
 import torch 
 from abc import ABC, abstractmethod
+from typing import Any
 
 class RecommenderModel(ABC):
 
@@ -13,7 +13,7 @@ class RecommenderModel(ABC):
         pass
 
     @abstractmethod
-    def train_epoch(self,train_loader: pl.DataFrame, val_loader: pl.DataFrame | None = None):
+    def train_epoch(self, batch: tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> dict[str, float]:
         """
         Train the model for one epoch.
         This method should be implemented by subclasses to define the training logic for a single epoch.
@@ -21,7 +21,7 @@ class RecommenderModel(ABC):
         pass
 
     @abstractmethod
-    def train(self,train_df:pl.DataFrame,val_loader:pl.DataFrame | None = None):
+    def train(self) -> Any:
         """
         Train the model.
         This method should be implemented by subclasses to define the training process.
@@ -29,7 +29,7 @@ class RecommenderModel(ABC):
         pass
 
     @abstractmethod
-    def test(self,test_df:pl.DataFrame):
+    def test(self) -> Any:
         """
         Test the model.
         This method should be implemented by subclasses to define the testing process.

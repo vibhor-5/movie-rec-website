@@ -20,9 +20,8 @@ mf_config={
 
 def main():
     model = MatrixFactorizationTrainer()
-    model.build(mf_config)
-    model.load("./checkpoints/matrix_factorization_model.pth")  
-    # model.train()
+    model.build(mf_config)  
+    model.train()
     print(model.test())
 
 if __name__ == "__main__":

@@ -1,17 +1,17 @@
 # MovieRec: Educational Movie Recommendation Platform
 
-MovieRec is a full-stack, educational movie recommendation platform that helps users discover new films while learning how recommendation algorithms work. The platform combines collaborative filtering, content-based filtering, and hybrid approaches, offering both personalized recommendations and interactive educational insights.
+MovieRec is a full-stack educational movie recommendation platform. It helps users discover new films and learn how recommendation algorithms work, combining collaborative filtering, content-based filtering, and hybrid approaches. The platform features a modern UI, robust backend, and extensible ML modules.
 
 ---
 
 ## Features
 
-- **Personalized Movie Recommendations**: Get suggestions tailored to your taste using multiple algorithms.
-- **Educational Insights**: Learn how recommendation systems work through interactive visualizations and explanations.
+- **Personalized Recommendations**: Tailored movie suggestions using multiple algorithms.
+- **Educational Insights**: Learn how recommendation systems work with interactive visualizations.
 - **Onboarding & Taste Profiling**: Rate movies and set preferences to build your unique taste profile.
-- **Modern UI**: Responsive, user-friendly frontend built with React, Tailwind CSS, and TypeScript.
-- **Robust Backend**: Node.js/Express API with Prisma ORM and PostgreSQL for data management.
-- **Extensible ML Models**: Python-based pre-training and recommender modules for experimenting with new algorithms.
+- **Modern UI**: Responsive frontend built with React, TypeScript, and Tailwind CSS.
+- **Robust Backend**: Node.js/Express API with Prisma ORM and PostgreSQL.
+- **Extensible ML Models**: Python-based modules for experimenting with new algorithms.
 
 ---
 
@@ -28,21 +28,18 @@ project/
 │
 ├── frontend/        # React + TypeScript + Tailwind CSS client
 │   ├── src/
-│   ├── public/
 │   ├── index.html
 │   ├── package.json
 │   └── ...
 │
-├── pre_training/    # Python ML models for offline training
+├── ml/              # Python ML models and training scripts
+│   ├── train.py
 │   ├── base/
 │   ├── models/
 │   └── ...
 │
-└── recommender/     # Python recommender system logic
-    ├── models/
-    ├── data/
-    ├── API/
-    └── ...
+├── env/             # Python virtual environment (auto-generated)
+│   └── ...
 ```
 
 ---
@@ -57,7 +54,7 @@ project/
 
 ### 1. Backend Setup
 
-```bash
+```sh
 cd backend
 cp .env.example .env   # Edit with your DB credentials
 npm install
@@ -67,22 +64,18 @@ npm run dev
 
 ### 2. Frontend Setup
 
-```bash
+```sh
 cd frontend
 npm install
 npm run dev
 ```
 
-### 3. Pre-training & Recommender (Python)
+### 3. ML Model Training (Optional)
 
-```bash
-cd pre_training
+```sh
+cd ml
 pip install -r requirements.txt
-# Train or evaluate models as needed
-
-cd ../recommender
-pip install -r requirements.txt
-# Run recommender scripts or API
+python train.py
 ```
 
 ---
@@ -124,4 +117,4 @@ MIT License
 
 ---
 
-_Discover. Learn. Enjoy movies
+_Discover. Learn. Enjoy movies._

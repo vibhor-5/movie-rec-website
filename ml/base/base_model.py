@@ -37,10 +37,11 @@ class RecommenderModel(ABC):
         pass
 
     @abstractmethod
-    def predict(self, user_ids: torch.Tensor, item_ids: torch.Tensor | None) -> torch.Tensor:
+    def predict(self,  item_ids: torch.Tensor , ratings: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
         """
         Predict scores for given user and item IDs.
         This method should be implemented by subclasses to define the prediction logic.
+        this will predict scores for users who have no user existing embeddings, cold start users.
         """
         pass
 

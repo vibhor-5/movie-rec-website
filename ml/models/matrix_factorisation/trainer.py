@@ -1,4 +1,5 @@
 from datetime import datetime
+import numpy as np
 import os
 from base.base_model import RecommenderModel
 from models.matrix_factorisation.model import MatrixFactorizationModel
@@ -6,6 +7,8 @@ from base.datasetloader import DatasetLoader
 from typing import Dict, Tuple
 from torch.utils.data import DataLoader
 import torch
+import torch.nn as nn
+import torch.nn.functional as F
 import wandb
 from tqdm import tqdm
 
@@ -31,6 +34,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
         self.checkpoints_dir = config.get('checkpoints_dir', 'checkpoints') 
         os.makedirs(self.checkpoints_dir, exist_ok=True)
 
+        self.latent_dim = config.get('embedding_dim', 64)
         self.model = MatrixFactorizationModel(
             num_users=self.num_users,
             num_items=self.num_items,
@@ -39,7 +43,11 @@ class MatrixFactorizationTrainer(RecommenderModel):
 
         print(self.model)
 
+        self.l2_reg = config.get('l2_reg', 0.01)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=config.get('learning_rate', 0.001))
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, mode='min', patience=3, factor=0.5
+        )
         self.loss_type = config.get('loss', 'mse')
         
         
@@ -58,9 +66,10 @@ class MatrixFactorizationTrainer(RecommenderModel):
         self.optimizer.zero_grad()
         
         predictions = self.model(user_ids, item_ids)
-        loss = self.model.loss(self.loss_type, predictions, ratings)
+        loss = self.model.loss(self.loss_type, predictions, ratings,self.l2_reg)
         
         loss.backward()
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
         self.optimizer.step()
         
         return {'loss': loss.item(), 'predictions': predictions}
@@ -90,16 +99,13 @@ class MatrixFactorizationTrainer(RecommenderModel):
             avg_epoch_loss = epoch_loss / len(train_loader)
             print(f"Epoch {epoch+1}, Avg Loss: {avg_epoch_loss:.4f}")
             wandb.log({'avg_epoch_loss': avg_epoch_loss, 'epoch': epoch+1})
-            if (epoch+1)%5==0 and epoch >0:
-                if val_loader is not None:
-                    val_metrics = self.validate(val_loader)
-                    print(f"Epoch {epoch+1}, Val Loss: {val_metrics['val_loss_avg']:.4f}")
-                    wandb.log({'val_loss_total': val_metrics['val_loss_total'],
-                            'val_loss_avg': val_metrics['val_loss_avg'],
-                            'epoch': epoch+1})
-                # Save model checkpoint
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                self.save(f"{self.checkpoints_dir}/{self.model_name}_model_epoch_{epoch+1}_{timestamp}.pth")
+            if val_loader is not None:
+                val_metrics = self.validate(val_loader)
+                print(f"Epoch {epoch+1},", val_metrics)
+                wandb.log(val_metrics)
+            # Save model checkpoint
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.save(f"{self.checkpoints_dir}/{self.model_name}_model_epoch_{epoch+1}_{timestamp}.pth")
 
         wandb.finish()
 
@@ -109,14 +115,33 @@ class MatrixFactorizationTrainer(RecommenderModel):
        
         self.model.eval()
         total_loss = 0.0
+        predictions_list = []
+        targets_list = []
+        
         with torch.no_grad():
             for batch in val_loader:
-                user_ids, item_ids, ratings = (x.to(self.device) for x in batch)
+                user_ids, item_ids, ratings = [x.to(self.device) for x in batch]
                 predictions = self.model(user_ids, item_ids)
-                loss = self.model.loss(self.loss_type, predictions, ratings)
+                loss = self.model.loss(self.loss_type, predictions, ratings, self.l2_reg)
+                
                 total_loss += loss.item()
+                predictions_list.append(predictions.cpu())
+                targets_list.append(ratings.cpu())
+        
+        all_predictions = torch.cat(predictions_list)
+        all_targets = torch.cat(targets_list)
+        
+        # Calculate additional metrics
+        mae = F.l1_loss(all_predictions, all_targets).item()
+        mse = F.mse_loss(all_predictions, all_targets).item()
+        rmse = np.sqrt(mse)
 
-        return {'val_loss_total': total_loss, 'val_loss_avg': total_loss / len(val_loader)}
+        return {
+            'val_loss': total_loss / len(val_loader),
+            'mae': mae,
+            'mse': mse, 
+            'rmse': rmse
+        }
     
     def test(self) -> Dict[str, float]:
         self.model.eval()
@@ -131,22 +156,33 @@ class MatrixFactorizationTrainer(RecommenderModel):
 
         return {'test_loss': total_loss / len(test_loader)}
     
-    def predict(self, user_ids: torch.Tensor, item_ids: torch.Tensor | None = None) -> torch.Tensor:
-        """
-        Predict scores for given user and item IDs.
-        
-        Args:
-            user_ids (torch.Tensor): Tensor of user IDs.
-            item_ids (torch.Tensor | None): Tensor of item IDs. If None, predict for all items.
-        
-        Returns:
-            torch.Tensor: Predicted scores for the user-item pairs.
-        """
+    def predict(self, item_ids: torch.Tensor, ratings: torch.Tensor ) -> tuple[torch.Tensor, torch.Tensor]:
         self.model.eval()
-        if item_ids is None:
-            item_ids = torch.arange(self.num_items, device=user_ids.device)
-        
-        return self.model(user_ids, item_ids)
+
+        user_emb = nn.Parameter(torch.randn(self.latent_dim, device=self.device, requires_grad=True))
+        optimiser = torch.optim.Adam([user_emb], lr=0.01)
+
+        # Ensure item_ids and ratings are on the correct device
+        item_ids = item_ids.to(self.device)
+        ratings = ratings.to(self.device)
+
+        item_embs = self.model.item_embedding(item_ids).detach()  # (N, D)
+
+        for epoch in range(100):
+            preds = (user_emb * item_embs).sum(dim=1)  # (N,)
+            loss = nn.MSELoss()(preds, ratings)        # (N,) vs (N,)
+            loss.backward()
+            optimiser.step()
+            optimiser.zero_grad()
+
+        # Predict for all items
+        all_item_embs = self.model.item_embedding.weight  # (num_items, D)
+        predictions = torch.matmul(user_emb, all_item_embs.T)  # (num_items,)
+        predictions, predicted_ids = predictions.sort(descending=True)
+
+        return predictions[:20], predicted_ids[:20]
+
+            
     
     def save(self, save_path: str) -> None:
         """

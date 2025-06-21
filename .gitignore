@@ -23,3 +23,8 @@ dist-ssr
 *.sw?
 .env
 .bolt/
+pre_training/wandb
+__pycache__/
+*.py[cod]
+checkpoints/
+wandb/

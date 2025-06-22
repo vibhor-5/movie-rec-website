@@ -10,7 +10,7 @@ const prisma = new PrismaClient();
 
 app.post('/user/preferences', authenticateToken, savePreference);
 app.get('/search', searchAny);
-app.get('/api/genre', genreMovieList); //send the genre in sentencecase
+app.get('/api/genre', genreMovieList); //send the genre in Sentencecase
 app.get('/api/popular', getPopularList);//send page number
 app.get('/api/similar', SimilarList);//send tmdbId
 

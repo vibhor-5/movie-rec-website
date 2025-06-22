@@ -12,7 +12,6 @@ interface Movie {
   title: string;
   posterPath: string;
   releaseDate: string;
-  voteAverage: number;
   genres: string[];
   overview: string;
 }
@@ -31,56 +30,7 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        // TODO: Replace with actual API calls
-        // Simulated data for now
-        const mockMovies: Movie[] = [
-          {
-            id: 1,
-            title: "The Shawshank Redemption",
-            posterPath: "https://images.pexels.com/photos/5662857/pexels-photo-5662857.jpeg?auto=compress&cs=tinysrgb&w=500",
-            releaseDate: "1994-09-23",
-            voteAverage: 9.3,
-            genres: ["Drama"],
-            overview: "Two imprisoned men bond over a number of years, finding solace and eventual redemption through acts of common decency."
-          },
-          {
-            id: 2,
-            title: "The Godfather",
-            posterPath: "https://images.pexels.com/photos/7234243/pexels-photo-7234243.jpeg?auto=compress&cs=tinysrgb&w=500",
-            releaseDate: "1972-03-24",
-            voteAverage: 9.2,
-            genres: ["Crime", "Drama"],
-            overview: "The aging patriarch of an organized crime dynasty transfers control of his clandestine empire to his reluctant son."
-          },
-          {
-            id: 3,
-            title: "The Dark Knight",
-            posterPath: "https://images.pexels.com/photos/8118880/pexels-photo-8118880.jpeg?auto=compress&cs=tinysrgb&w=500",
-            releaseDate: "2008-07-18",
-            voteAverage: 9.0,
-            genres: ["Action", "Crime", "Drama"],
-            overview: "When the menace known as the Joker wreaks havoc and chaos on the people of Gotham, Batman must accept one of the greatest psychological and physical tests."
-          },
-          {
-            id: 4,
-            title: "Pulp Fiction",
-            posterPath: "https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&w=500",
-            releaseDate: "1994-10-14",
-            voteAverage: 8.9,
-            genres: ["Crime", "Drama"],
-            overview: "The lives of two mob hitmen, a boxer, a gangster and his wife intertwine in four tales of violence and redemption."
-          },
-          {
-            id: 5,
-            title: "Inception",
-            posterPath: "https://images.pexels.com/photos/8118890/pexels-photo-8118890.jpeg?auto=compress&cs=tinysrgb&w=500",
-            releaseDate: "2010-07-16",
-            voteAverage: 8.8,
-            genres: ["Action", "Sci-Fi", "Thriller"],
-            overview: "A thief who steals corporate secrets through the use of dream-sharing technology is given the inverse task of planting an idea."
-          }
-        ];
-
+        
         setFeaturedMovies(mockMovies);
         setRecommendations({
           collaborativeMovies: mockMovies,

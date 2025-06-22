@@ -38,7 +38,8 @@ class MatrixFactorizationTrainer(RecommenderModel):
         self.model = MatrixFactorizationModel(
             num_users=self.num_users,
             num_items=self.num_items,
-            embedding_dim=config.get('embedding_dim', 64)
+            embedding_dim=config.get('embedding_dim', 64),
+            dropout_rate=config.get('dropout_rate', 0.2)
         ).to(self.device)
 
         print(self.model)

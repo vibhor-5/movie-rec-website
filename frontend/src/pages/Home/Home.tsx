@@ -6,6 +6,8 @@ import MovieCarousel from '../../components/common/MovieCarousel/MovieCarousel';
 import RecommendationSection from '../../components/dashboard/RecommendationSection/RecommendationSection';
 import LoadingSpinner from '../../components/common/LoadingSpinner/LoadingSpinner';
 import styles from './Home.module.css';
+import { getPopularMovies } from '../../api/general';
+import { set } from 'zod/v4';
 
 interface Movie {
   id: number;
@@ -17,6 +19,7 @@ interface Movie {
 }
 
 const Home: React.FC = () => {
+  
   const { isAuthenticated } = useAuthContext();
   const [isLoading, setIsLoading] = useState(true);
   const [featuredMovies, setFeaturedMovies] = useState<Movie[]>([]);
@@ -28,9 +31,11 @@ const Home: React.FC = () => {
   });
 
   useEffect(() => {
+
     const fetchData = async () => {
+      setIsLoading(true);
       try {
-        
+        const mockMovies: Movie[] = await getPopularMovies(1);
         setFeaturedMovies(mockMovies);
         setRecommendations({
           collaborativeMovies: mockMovies,

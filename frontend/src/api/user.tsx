@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-const baseURL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
+const baseURL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
     baseURL: baseURL,
@@ -10,7 +10,7 @@ const api = axios.create({
     timeout: 5000,
 });
 
-export const getUserProfile= async (token) =>{
+export const getUserProfile= async (token:any) =>{
     try {
         const response = await api.get('/user/profile', {
             headers: {

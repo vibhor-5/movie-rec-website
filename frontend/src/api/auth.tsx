@@ -1,6 +1,15 @@
 import axios from 'axios';
 
-const baseURL = process.env.BACKEND_API_URL || 'http://localhost:5000/api';
+interface AuthResponse {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+  };
+  token: string;
+}
+
+const baseURL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3000/api';
 
 const api = axios.create({
     baseURL: baseURL,
@@ -10,9 +19,9 @@ const api = axios.create({
     timeout: 5000,
 });
 
-export const resgisterUser = async (userData) => {
+export const resgisterUser = async (userData:any ) => {
     try {
-        const response = await api.post('/auth/register', userData);
+        const response = await api.post<AuthResponse>('/auth/register', userData);
         return response.data;
     }catch (error) {
         console.error('Error registering user:', error);
@@ -20,9 +29,9 @@ export const resgisterUser = async (userData) => {
     }
 }
 
-export const loginUser = async (credentials) => {
+export const loginUser = async (credentials:any ) => {
     try {
-        const response = await api.post('/auth/login', credentials);
+        const response = await api.post<AuthResponse>('/auth/login', credentials);
         return response.data;
     } catch (error) {
         console.error('Error logging in user:', error);

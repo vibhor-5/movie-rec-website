@@ -1,6 +1,16 @@
 import axios from 'axios';
 
-const baseURL = process.env.BACKEND_API_URL || 'http://localhost:5000/';
+interface Movie {
+  id: number;
+  title: string;
+  posterPath: string;
+  releaseDate: string;
+  genres: string[];
+  overview: string;
+}
+
+
+const baseURL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3000/';
 const api = axios.create({
     baseURL: baseURL,
     headers: {
@@ -9,7 +19,7 @@ const api = axios.create({
     timeout: 5000,
 });
 
-export const searchMovies = async (query) => {  
+export const searchMovies = async (query:any) => {  
     try {
         const response = await api.get('/search', {
             params: { query }
@@ -21,7 +31,7 @@ export const searchMovies = async (query) => {
     }
 }
 
-export const getGenreList = async (genre) => {
+export const getGenreList = async (genre:any) => {
     try {
         const response = await api.get('/api/genre',{
             params: { genre }
@@ -33,9 +43,9 @@ export const getGenreList = async (genre) => {
     }
 }
 
-export const getPopularMovies = async (page = 1) => {
+export const getPopularMovies = async (page:number): Promise<Movie[]> =>  {
     try {
-        const response = await api.get('/api/popular', {
+        const response = await api.get<Movie[]>('/api/popular', {
             params: { page }
         });
         return response.data;

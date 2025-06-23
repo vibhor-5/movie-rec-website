@@ -1,5 +1,15 @@
 import { useState, useCallback } from 'react';
+import { loginUser,resgisterUser } from '../api/auth';
+import axios from 'axios';
 
+const baseURL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3000/'; 
+const api = axios.create({
+  baseURL: baseURL,
+  headers: {
+    "Content-Type": "application/json",
+  },
+  timeout: 5000,
+});
 interface User {
   id: string;
   name: string;
@@ -22,16 +32,14 @@ export const useAuth = () => {
   const login = useCallback(async (email: string, password: string) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
-      // TODO: Implement actual login logic
-      // For now, simulate a successful login
-      const mockUser: User = {
-        id: '1',
-        name: 'Test User',
-        email: email
-      };
-      
+      const {user,token} = await loginUser({ email, password });
+      if (!user || !token) {
+        throw new Error('Login failed');
+      }
+      localStorage.setItem('token', token); // Store token in localStorage
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`; // Set token in axios headers
       setAuthState({
-        user: mockUser,
+        user: user,
         isAuthenticated: true,
         isLoading: false
       });
@@ -46,16 +54,15 @@ export const useAuth = () => {
   const register = useCallback(async (name: string, email: string, password: string) => {
     setAuthState(prev => ({ ...prev, isLoading: true }));
     try {
-      // TODO: Implement actual registration logic
-      // For now, simulate a successful registration
-      const mockUser: User = {
-        id: '1',
-        name: name,
-        email: email
-      };
+      const {user,token} = await resgisterUser({ name, email, password });
+      if (!user || !token) {
+        throw new Error('Registration failed');
+      }
+      localStorage.setItem('token', token); // Store token in localStorage
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`; // Set token in axios headers
       
       setAuthState({
-        user: mockUser,
+        user: user,
         isAuthenticated: true,
         isLoading: false
       });

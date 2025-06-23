@@ -7,6 +7,7 @@ export interface TMDBResult {
     release_date?: string;
     poster_path?: string;
     media_type?: string;
+    overview?: string;
 }
 
 export interface ExternalIDsResponse {

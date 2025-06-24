@@ -144,8 +144,21 @@ export const getPopularMovies = async (page: number) => {
             params: {
                 page,
             }
+        });// This transformation should only include the direct mapping of fields available in the popular movies endpoint, without fetching external IDs.
+        const tasks = res.results.map(async (m) => {
+            return {
+                id: m.id,
+                tmdbId: m.id,
+                title: m.title || m.name || 'Unknown Title',
+                genres: m.genre_ids ? m.genre_ids.map(id => id.toString()) : [], // Note: popular movies endpoint returns genre_ids, not full genre objects
+                year: m.release_date ? parseInt(m.release_date.split('-')[0]) : null,
+                releaseDate: m.release_date || '',
+                posterPath: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+                overview: m.overview || '',
+                voteAverage: m.vote_average || 0,
+                imdbId: null, // IMDB ID is not available in the popular movies endpoint
+            };
         });
-        const tasks = res.results.map(limitedTransform);
         const results = await Promise.all(tasks);
         return results;
     } catch (error) {

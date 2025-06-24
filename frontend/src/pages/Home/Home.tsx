@@ -7,15 +7,18 @@ import RecommendationSection from '../../components/dashboard/RecommendationSect
 import LoadingSpinner from '../../components/common/LoadingSpinner/LoadingSpinner';
 import styles from './Home.module.css';
 import { getPopularMovies } from '../../api/general';
-import { set } from 'zod/v4';
 
 interface Movie {
   id: number;
   title: string;
-  posterPath: string;
+  posterPath: string | null;
   releaseDate: string;
   genres: string[];
   overview: string;
+  voteAverage: number;
+  imdbId: string | null;
+  tmdbId: number;
+  year: number | null;
 }
 
 const Home: React.FC = () => {

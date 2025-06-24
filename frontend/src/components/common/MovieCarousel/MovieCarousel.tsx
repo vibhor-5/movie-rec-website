@@ -5,7 +5,7 @@ import styles from './MovieCarousel.module.css';
 interface Movie {
   id: number;
   title: string;
-  posterPath: string;
+  posterPath: string | null;
   releaseDate: string;
   voteAverage: number;
   genres: string[];
@@ -53,6 +53,17 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({
     );
   }
 
+  if (!movies || movies.length === 0) {
+    return (
+      <div className={styles.carousel}>
+        <h2 className={styles.title}>{title}</h2>
+        <div className={styles.loadingContainer}>
+          <p>No movies available</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={styles.carousel}>
       <div className={styles.header}>
@@ -88,4 +99,4 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({
   );
 };
 
-export default MovieCarousel; 
+export default MovieCarousel;

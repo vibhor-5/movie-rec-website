@@ -44,7 +44,7 @@ export async function safeGet<T>(url: string, options = {}, retries = 3): Promis
 }
 
 export const transformMovie = (limit: (fn: () => Promise<any>) => Promise<any>) =>
-    async (m: Movie): Promise<TransformedMovie> => {
+    async (m: TMDBResult): Promise<TransformedMovie> => {
         return limit(async () => {
             let imdbId: string | null = null;
             try {
@@ -62,14 +62,17 @@ export const transformMovie = (limit: (fn: () => Promise<any>) => Promise<any>) 
             }
 
             return {
+                id: m.id,
                 tmdbId: m.id,
-                title: m.title || m.name || null,
-                genre_ids: m.genre_ids || [],
+                title: m.title || m.name || 'Unknown Title',
+                genres: m.genres ? m.genres.map((g) => g.name) : [],
                 year: m.release_date ? parseInt(m.release_date.split('-')[0]) : null,
-                genre: m.genres ? m.genres.map((g) => g.name) : [],
-                posterUrl: m.poster_path
+                releaseDate: m.release_date || '',
+                posterPath: m.poster_path
                     ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
                     : null,
+                overview: m.overview || '',
+                voteAverage: m.vote_average || 0,
                 imdbId,
             };
         });
@@ -92,17 +95,21 @@ export const searchMulti = async (query: string, page = 1) => {
     }
 };
 
-export const getMovieDetails = async (tmdbId: number) => {
+export const getMovieDetails = async (tmdbId: number): Promise<TransformedMovie> => {
     try {
         const res = await safeGet<TMDBResult>(`/movie/${tmdbId}`);
         const m = res;
         const imdbRes = await safeGet<ExternalIDsResponse>(`/movie/${tmdbId}/external_ids`);
         return {
+            id: m.id,
             tmdbId: m.id,
-            title: m.title || '',
+            title: m.title || 'Unknown Title',
             year: m.release_date ? parseInt(m.release_date.split('-')[0]) : null,
-            genre: m.genres?.map((g: any) => g.name) || [],
-            posterUrl: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+            releaseDate: m.release_date || '',
+            genres: m.genres?.map((g: any) => g.name) || [],
+            posterPath: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
+            overview: m.overview || '',
+            voteAverage: m.vote_average || 0,
             imdbId: imdbRes.imdb_id || null,
         };
     } catch (error) {

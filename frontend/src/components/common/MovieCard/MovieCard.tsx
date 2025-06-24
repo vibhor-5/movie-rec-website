@@ -5,11 +5,12 @@ import styles from './MovieCard.module.css';
 interface MovieCardProps {
   id: number;
   title: string;
-  posterPath: string;
+  posterPath: string | null;
   releaseDate: string;
   voteAverage: number;
   genres: string[];
   overview: string;
+  onClick?: () => void;
 }
 
 const MovieCard: React.FC<MovieCardProps> = ({
@@ -17,27 +18,33 @@ const MovieCard: React.FC<MovieCardProps> = ({
   title,
   posterPath,
   releaseDate,
-  voteAverage,
-  genres,
-  overview
+  voteAverage = 0,
+  genres = [],
+  overview = '',
+  onClick
 }) => {
-  const year = new Date(releaseDate).getFullYear();
-  const posterUrl = posterPath
-    ? `https://image.tmdb.org/t/p/w500${posterPath}`
-    : '/images/placeholders/movie-placeholder.jpg';
+  const year = releaseDate ? new Date(releaseDate).getFullYear() : 'Unknown';
+  const posterUrl = posterPath || '/images/placeholders/movie-placeholder.jpg';
+  const safeVoteAverage = typeof voteAverage === 'number' ? voteAverage : 0;
+  const safeGenres = Array.isArray(genres) ? genres : [];
+  const safeOverview = typeof overview === 'string' ? overview : '';
 
-  return (
-    <Link to={`/movie/${id}`} className={styles.card}>
+  const cardContent = (
+    <>
       <div className={styles.posterContainer}>
         <img
           src={posterUrl}
           alt={title}
           className={styles.poster}
           loading="lazy"
+          onError={(e) => {
+            const target = e.target as HTMLImageElement;
+            target.src = '/images/placeholders/movie-placeholder.jpg';
+          }}
         />
         <div className={styles.overlay}>
           <div className={styles.rating}>
-            <span className={styles.ratingValue}>{voteAverage.toFixed(1)}</span>
+            <span className={styles.ratingValue}>{safeVoteAverage.toFixed(1)}</span>
             <span className={styles.ratingMax}>/10</span>
           </div>
         </div>
@@ -48,17 +55,31 @@ const MovieCard: React.FC<MovieCardProps> = ({
         <div className={styles.meta}>
           <span className={styles.year}>{year}</span>
           <span className={styles.genres}>
-            {genres.slice(0, 2).join(', ')}
+            {safeGenres.slice(0, 2).join(', ')}
           </span>
         </div>
         <p className={styles.overview}>
-          {overview.length > 100
-            ? `${overview.substring(0, 100)}...`
-            : overview}
+          {safeOverview.length > 100
+            ? `${safeOverview.substring(0, 100)}...`
+            : safeOverview}
         </p>
       </div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <div className={styles.card} onClick={onClick}>
+        {cardContent}
+      </div>
+    );
+  }
+
+  return (
+    <Link to={`/movie/${id}`} className={styles.card}>
+      {cardContent}
     </Link>
   );
 };
 
-export default MovieCard; 
+export default MovieCard;

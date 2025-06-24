@@ -5,7 +5,7 @@ import styles from './RecommendationSection.module.css';
 interface Movie {
   id: number;
   title: string;
-  posterPath: string;
+  posterPath: string | null;
   releaseDate: string;
   voteAverage: number;
   genres: string[];
@@ -82,4 +82,4 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
   );
 };
 
-export default RecommendationSection; 
+export default RecommendationSection;

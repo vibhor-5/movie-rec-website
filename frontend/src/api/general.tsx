@@ -3,10 +3,14 @@ import axios from 'axios';
 interface Movie {
   id: number;
   title: string;
-  posterPath: string;
+  posterPath: string | null;
   releaseDate: string;
   genres: string[];
   overview: string;
+  voteAverage: number;
+  imdbId: string | null;
+  tmdbId: number;
+  year: number | null;
 }
 
 
@@ -54,4 +58,3 @@ export const getPopularMovies = async (page:number): Promise<Movie[]> =>  {
         throw error;
     }
 }
-

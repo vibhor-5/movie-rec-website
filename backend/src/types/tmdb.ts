@@ -30,10 +30,12 @@ export interface Movie {
 export interface TransformedMovie {
     id: number;
     title: string;
-    posterPath: string;
+    posterPath: string | null;
     releaseDate: string;
     voteAverage: number;
     genres: string[];
     overview: string;
     imdbId: string | null;
+    tmdbId: number;
+    year: number | null;
 }

@@ -100,9 +100,10 @@ class DatasetLoader:
         train_end = int(n * (1 - self.val_ratio - self.test_ratio))
         val_end = int(n * (1 - self.test_ratio))
 
-        train_data = self.data[:train_end]
-        val_data = self.data[train_end:val_end]
-        test_data = self.data[val_end:]
+        data=self.data.sample(fraction=1.0,shuffle=True)  # Shuffle the data before splitting
+        train_data = data[:train_end]
+        val_data = data[train_end:val_end]
+        test_data = data[val_end:]
 
         return RecommenderDataset(train_data), RecommenderDataset(val_data), RecommenderDataset(test_data)
     

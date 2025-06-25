@@ -11,7 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import wandb
 from tqdm import tqdm
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_scorefrom sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 
 class MatrixFactorizationTrainer(RecommenderModel):
@@ -50,21 +50,13 @@ class MatrixFactorizationTrainer(RecommenderModel):
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
             self.optimizer, mode='min', patience=3, factor=0.5
         )
-        self.loss_type = config.get('loss', 'mse')
-        self.is_binary = config.get('binarize', False)
+        self.loss_type = config.get('loss', 'bce_logits')
+        self.is_binary = config.get('binarize', True)
         self.threshold = config.get('threshold', 0.5)
+        
         
 
     def train_epoch(self, batch: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> Dict[str,float]:
-        """
-        Perform a single training step.
-        
-        Args:
-            batch (Tuple[torch.Tensor, torch.Tensor, torch.Tensor]): A batch of user IDs, item IDs, and ratings.
-        
-        Returns:
-            Dict[str, torch.Tensor]: Dictionary containing the loss and predictions.
-        """
         user_ids, item_ids, ratings = batch
         self.optimizer.zero_grad()
         
@@ -92,12 +84,11 @@ class MatrixFactorizationTrainer(RecommenderModel):
                 batch_loss = metrics['loss']
                 epoch_loss += float(batch_loss)
                 progress_bar.set_postfix({'loss': batch_loss})
-                wandb.log({'batch_loss': batch_loss, 'epoch': epoch+1})
+                wandb.log({'batch_loss': batch_loss })
 
             avg_epoch_loss = epoch_loss / len(train_loader)
             print(f"Epoch {epoch+1}, Avg Loss: {avg_epoch_loss:.4f}")
-            wandb.log({'avg_epoch_loss': avg_epoch_loss, 'epoch': epoch+1})
-            
+            wandb.log({'avg_epoch_loss': avg_epoch_loss})
             if val_loader is not None:
                 val_metrics = self.validate(val_loader)
                 print(f"Epoch {epoch+1},", val_metrics)
@@ -109,6 +100,10 @@ class MatrixFactorizationTrainer(RecommenderModel):
             # Save model checkpoint
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             self.save(f"{self.checkpoints_dir}/{self.model_name}_model_epoch_{epoch+1}_{timestamp}.pth")
+            if (epoch+1)%5==0:
+                test_results = self.test()
+                print(test_results)
+                wandb.log(test_results)
 
         wandb.finish()
 

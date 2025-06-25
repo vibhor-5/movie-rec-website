@@ -2,7 +2,7 @@ import torch
 import torch.nn as nn
 
 class MatrixFactorizationModel(nn.Module):
-    def __init__(self, num_users: int, num_items: int, embedding_dim: int = 64, dropout_rate: float =0.2):
+    def __init__(self, num_users: int, num_items: int, embedding_dim: int = 64, dropout_rate: float = 0.2):
         """
         Initialize the Matrix Factorization model.
 
@@ -12,8 +12,8 @@ class MatrixFactorizationModel(nn.Module):
             embedding_dim (int): Dimension of the user and item embeddings.
         """
         super(MatrixFactorizationModel, self).__init__()
-        self.user_embedding  = nn.Embedding(num_users, embedding_dim)
-        self.item_embedding  = nn.Embedding(num_items, embedding_dim)
+        self.user_embedding = nn.Embedding(num_users, embedding_dim)
+        self.item_embedding = nn.Embedding(num_items, embedding_dim)
 
         self.user_bias = nn.Embedding(num_users, 1)
         self.item_bias = nn.Embedding(num_items, 1)
@@ -27,11 +27,16 @@ class MatrixFactorizationModel(nn.Module):
     
     def _init_weights(self):
         """Initialize embeddings with small random values"""
-        nn.init.normal_(self.user_embedding.weight, 0, 0.1)
-        nn.init.normal_(self.item_embedding.weight, 0, 0.1)
+        # Use Xavier/Glorot initialization for better gradient flow
+        nn.init.xavier_normal_(self.user_embedding.weight, gain=0.1)
+        nn.init.xavier_normal_(self.item_embedding.weight, gain=0.1)
         
-        nn.init.zeros_(self.user_bias.weight)
-        nn.init.zeros_(self.item_bias.weight)
+        # Initialize biases to small values instead of zeros
+        nn.init.normal_(self.user_bias.weight, 0, 0.01)
+        nn.init.normal_(self.item_bias.weight, 0, 0.01)
+        
+        # Initialize global bias to a small positive value for binary classification
+        nn.init.constant_(self.global_bias, 0.01)
 
     def forward(self, user_ids: torch.Tensor, item_ids: torch.Tensor) -> torch.Tensor:
         """
@@ -44,25 +49,30 @@ class MatrixFactorizationModel(nn.Module):
         Returns:
             torch.Tensor: Predicted scores for the user-item pairs.
         """
-        user_embeds : torch.Tensor = self.user_embedding(user_ids)
-        item_embeds : torch.Tensor = self.item_embedding(item_ids)
-        user_embeds = self.dropout(user_embeds)
-        item_embeds = self.dropout(item_embeds)
-        pred= (user_embeds * item_embeds).sum(dim=1)  # Dot product
+        user_embeds: torch.Tensor = self.user_embedding(user_ids)
+        item_embeds: torch.Tensor = self.item_embedding(item_ids)
+        
+        # Apply dropout only during training
+        if self.training:
+            user_embeds = self.dropout(user_embeds)
+            item_embeds = self.dropout(item_embeds)
+        
+        pred = (user_embeds * item_embeds).sum(dim=1)  # Dot product
         user_bias = self.user_bias(user_ids).squeeze()  # (batch_size,)
         item_bias = self.item_bias(item_ids).squeeze()  # (batch_size,)
         predictions = pred + user_bias + item_bias + self.global_bias
 
         return predictions
     
-    
-    def loss(self, loss_type:str, predictions: torch.Tensor, targets: torch.Tensor, l2_reg :float = 0.01) -> torch.Tensor:
+    def loss(self, loss_type: str, predictions: torch.Tensor, targets: torch.Tensor, l2_reg: float = 0.01) -> torch.Tensor:
         """
         Compute the loss between predictions and targets.
 
         Args:
+            loss_type (str): Type of loss function to use.
             predictions (torch.Tensor): Predicted scores.
             targets (torch.Tensor): Ground truth scores.
+            l2_reg (float): L2 regularization strength.
 
         Returns:
             torch.Tensor: Computed loss.
@@ -72,9 +82,8 @@ class MatrixFactorizationModel(nn.Module):
             # Use BCEWithLogitsLoss for numerical stability
             loss_fn = nn.BCEWithLogitsLoss()
             base_loss = loss_fn(predictions, targets)
-        
-        # Compute base loss
         else:
+            # Compute base loss
             loss_functions = {
                 "mse": nn.MSELoss(),
                 "mae": nn.L1Loss(), 

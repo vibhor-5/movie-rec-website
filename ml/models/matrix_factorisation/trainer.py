@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import wandb
 from tqdm import tqdm
+from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 
 class MatrixFactorizationTrainer(RecommenderModel):
@@ -50,7 +51,8 @@ class MatrixFactorizationTrainer(RecommenderModel):
             self.optimizer, mode='min', patience=3, factor=0.5
         )
         self.loss_type = config.get('loss', 'mse')
-        
+        self.is_binary = config.get('binarize', False)
+        self.threshold = config.get('threshold', 0.5)
         
 
     def train_epoch(self, batch: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> Dict[str,float]:
@@ -81,11 +83,6 @@ class MatrixFactorizationTrainer(RecommenderModel):
         train_loader = self.dataset.get_dataloader(self.train_data, batch_size=self.config.get('batch_size', 64))
         val_loader = self.dataset.get_dataloader(self.val_data, batch_size=self.config.get('batch_size', 64)) if self.val_data else None
 
-        # if val_loader is not None:
-        #     self.val_loader = val_loader
-        # else:
-        #     self.val_loader = None
-
         for epoch in range(self.config.get('num_epochs', 10)):
             self.model.train()
             epoch_loss = 0.0
@@ -100,20 +97,22 @@ class MatrixFactorizationTrainer(RecommenderModel):
             avg_epoch_loss = epoch_loss / len(train_loader)
             print(f"Epoch {epoch+1}, Avg Loss: {avg_epoch_loss:.4f}")
             wandb.log({'avg_epoch_loss': avg_epoch_loss, 'epoch': epoch+1})
+            
             if val_loader is not None:
                 val_metrics = self.validate(val_loader)
                 print(f"Epoch {epoch+1},", val_metrics)
                 wandb.log(val_metrics)
+                
+                # Use validation loss for scheduler
+                self.scheduler.step(val_metrics['val_loss'])
+                
             # Save model checkpoint
             timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
             self.save(f"{self.checkpoints_dir}/{self.model_name}_model_epoch_{epoch+1}_{timestamp}.pth")
 
         wandb.finish()
 
-        
-
     def validate(self, val_loader: DataLoader) -> Dict[str, float]:
-       
         self.model.eval()
         total_loss = 0.0
         predictions_list = []
@@ -132,30 +131,85 @@ class MatrixFactorizationTrainer(RecommenderModel):
         all_predictions = torch.cat(predictions_list)
         all_targets = torch.cat(targets_list)
         
-        # Calculate additional metrics
-        mae = F.l1_loss(all_predictions, all_targets).item()
-        mse = F.mse_loss(all_predictions, all_targets).item()
-        rmse = np.sqrt(mse)
-
-        return {
-            'val_loss': total_loss / len(val_loader),
-            'mae': mae,
-            'mse': mse, 
-            'rmse': rmse
+        metrics = {
+            'val_loss': total_loss / len(val_loader)
         }
+        
+        if self.is_binary:
+            # For binary classification metrics
+            # Convert logits to probabilities using sigmoid
+            probabilities = torch.sigmoid(all_predictions)
+            
+            # Convert probabilities to binary predictions using threshold
+            binary_predictions = (probabilities >= self.threshold).float()
+            
+            # Convert to numpy for sklearn metrics
+            y_true = all_targets.numpy()
+            y_pred = binary_predictions.numpy()
+            y_prob = probabilities.numpy()
+            
+            # Calculate binary classification metrics
+            try:
+                metrics.update({
+                    'accuracy': accuracy_score(y_true, y_pred),
+                    'precision': precision_score(y_true, y_pred, zero_division=0),
+                    'recall': recall_score(y_true, y_pred, zero_division=0),
+                    'f1_score': f1_score(y_true, y_pred, zero_division=0),
+                    'auc_roc': roc_auc_score(y_true, y_prob) if len(np.unique(y_true)) > 1 else 0.0
+                })
+                
+                # Additional binary metrics
+                tn = np.sum((y_true == 0) & (y_pred == 0))
+                tp = np.sum((y_true == 1) & (y_pred == 1))
+                fn = np.sum((y_true == 1) & (y_pred == 0))
+                fp = np.sum((y_true == 0) & (y_pred == 1))
+                
+                specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0
+                
+                metrics.update({
+                    'specificity': specificity,
+                    'true_positives': tp,
+                    'true_negatives': tn,
+                    'false_positives': fp,
+                    'false_negatives': fn
+                })
+                
+            except Exception as e:
+                print(f"Warning: Could not calculate some binary metrics: {e}")
+                # Fallback to basic metrics
+                metrics.update({
+                    'accuracy': 0.0,
+                    'precision': 0.0,
+                    'recall': 0.0,
+                    'f1_score': 0.0,
+                    'auc_roc': 0.0
+                })
+        else:
+            # For regression metrics
+            mae = F.l1_loss(all_predictions, all_targets).item()
+            mse = F.mse_loss(all_predictions, all_targets).item()
+            rmse = np.sqrt(mse)
+            
+            metrics.update({
+                'mae': mae,
+                'mse': mse, 
+                'rmse': rmse
+            })
+
+        return metrics
     
     def test(self) -> Dict[str, float]:
         self.model.eval()
         test_loader = self.dataset.get_dataloader(self.test_data, batch_size=self.config.get('batch_size', 64))
-        total_loss = 0.0
-        with torch.no_grad():
-            for batch in test_loader:
-                user_ids, item_ids, ratings = (x.to(self.device) for x in batch)
-                predictions = self.model(user_ids, item_ids)
-                loss = self.model.loss(self.loss_type, predictions, ratings)
-                total_loss += loss.item()
-
-        return {'test_loss': total_loss / len(test_loader)}
+        
+        # Use the same validation logic for test set
+        test_metrics = self.validate(test_loader)
+        
+        # Rename val_loss to test_loss
+        if 'val_loss' in test_metrics:
+            test_metrics['test_loss'] = test_metrics.pop('val_loss')
+            
+        return test_metrics
     
     def predict(self, item_ids: torch.Tensor, ratings: torch.Tensor ) -> tuple[torch.Tensor, torch.Tensor]:
         self.model.eval()
@@ -171,7 +225,15 @@ class MatrixFactorizationTrainer(RecommenderModel):
 
         for epoch in range(100):
             preds = (user_emb * item_embs).sum(dim=1)  # (N,)
-            loss = nn.MSELoss()(preds, ratings)        # (N,) vs (N,)
+            
+            if self.is_binary:
+                # For binary classification, use BCE loss
+                preds_sigmoid = torch.sigmoid(preds)
+                loss = F.binary_cross_entropy(preds_sigmoid, ratings)
+            else:
+                # For regression, use MSE loss
+                loss = F.mse_loss(preds, ratings)
+                
             loss.backward()
             optimiser.step()
             optimiser.zero_grad()
@@ -179,11 +241,14 @@ class MatrixFactorizationTrainer(RecommenderModel):
         # Predict for all items
         all_item_embs = self.model.item_embedding.weight  # (num_items, D)
         predictions = torch.matmul(user_emb, all_item_embs.T)  # (num_items,)
+        
+        if self.is_binary:
+            # Convert logits to probabilities for binary classification
+            predictions = torch.sigmoid(predictions)
+            
         predictions, predicted_ids = predictions.sort(descending=True)
 
         return predictions[:20], predicted_ids[:20]
-
-            
     
     def save(self, save_path: str) -> None:
         """
@@ -205,9 +270,3 @@ class MatrixFactorizationTrainer(RecommenderModel):
         self.model.to(self.device)
         self.model.eval()
         print(f"Model loaded from {load_path}")
-    
-
-        
-        
-
-        

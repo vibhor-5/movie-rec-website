@@ -50,7 +50,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
         
         # More conservative scheduler settings
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', patience=5, factor=0.3, verbose=True
+            self.optimizer, mode='min', patience=5, factor=0.3
         )
         
         self.loss_type = config.get('loss', 'bce_logits')
@@ -171,7 +171,8 @@ class MatrixFactorizationTrainer(RecommenderModel):
                 
                 test_results = self.test()
                 print(f"Test results: {test_results}")
-                wandb.log({**test_results, 'epoch': epoch+1})
+                test_results_prefixed = {f"test_{k}": v for k, v in test_results.items()}
+                wandb.log({**test_results_prefixed, 'epoch': epoch+1})
 
         # Load best model if early stopping was used
         if self.best_model_state is not None:

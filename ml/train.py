@@ -6,7 +6,7 @@ mf_config={
     "model_name": "matrix_factorization",
     "checkpoints_dir": "checkpoints",
     "num_epochs": 50,  # Increased for early stopping
-    "embedding_dim": 64,
+    "embedding_dim": 128,
     "dropout_rate": 0.3,  # Reduced from 0.5
     "learning_rate": 0.0001,  # Reduced for stability
     "loss": "bce_logits",
@@ -17,17 +17,18 @@ mf_config={
     "binarize": True,
     "min_rating": 4,
     "wandb_project": "mf_training_fixed",
-    "l2_reg": 0.0005,  # Reduced regularization
+    "l2_reg": 0.001,  # Reduced regularization
     "threshold": 0.5,
-    "early_stopping_patience": 10  # Early stopping patience
+    "early_stopping_patience": 6  # Early stopping patience
 }
 
 
 def main():
     model = MatrixFactorizationTrainer()
     model.build(mf_config)  
-    model.train()
-    
+    # model.train()
+    model.load("/Users/vibhorkumar/Desktop/projs/project/ml/checkpoints/final_checkpoints/matrix_factorization_final_20250626_230836.pth")
+    print(model.test())
     # Test prediction
     item_ids = torch.tensor([7, 8, 9, 10])
     ratings = torch.tensor([1.0, 1.0, 0.0, 0.0])

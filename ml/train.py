@@ -9,6 +9,10 @@ mf_config={
     "embedding_dim": 32,  # Reduced to prevent overfitting
     "dropout_rate": 0.3,  # Reduced dropout
     "learning_rate": 0.001,  # Increased learning rate
+    "num_epochs": 10,
+    "embedding_dim": 64,
+    "dropout_rate": 0.5,
+    "learning_rate": 0.0005,
     "loss": "bce_logits",
     "data_path": "ml-1m/ratings.dat",
     "dataset_type": "csv",

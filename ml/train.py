@@ -5,20 +5,21 @@ import wandb
 mf_config={
     "model_name": "matrix_factorization",
     "checkpoints_dir": "checkpoints",
-    "num_epochs": 10,
+    "num_epochs": 50,  # Increased for early stopping
     "embedding_dim": 64,
-    "dropout_rate": 0.5,
-    "learning_rate": 0.0005,
+    "dropout_rate": 0.3,  # Reduced from 0.5
+    "learning_rate": 0.0001,  # Reduced for stability
     "loss": "bce_logits",
     "data_path": "ml-1m/ratings.dat",
     "dataset_type": "csv",
     "separator": ',',
-    "batch_size": 128,  # Increased batch size
+    "batch_size": 256,  # Increased for more stable gradients
     "binarize": True,
     "min_rating": 4,
-    "wandb_project": "mf_training",
-    "l2_reg": 0.001,  # Reduced regularization
-    "threshold": 0.5  # Explicit threshold
+    "wandb_project": "mf_training_fixed",
+    "l2_reg": 0.0005,  # Reduced regularization
+    "threshold": 0.5,
+    "early_stopping_patience": 10  # Early stopping patience
 }
 
 

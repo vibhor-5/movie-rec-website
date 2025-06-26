@@ -19,6 +19,10 @@ class MatrixFactorizationModel(nn.Module):
         self.item_bias = nn.Embedding(num_items, 1)
         self.global_bias = nn.Parameter(torch.zeros(1))
         
+        # Batch normalization for embeddings
+        self.user_bn = nn.BatchNorm1d(embedding_dim)
+        self.item_bn = nn.BatchNorm1d(embedding_dim)
+        
         # Dropout for regularization
         self.dropout = nn.Dropout(dropout_rate)
         
@@ -27,16 +31,16 @@ class MatrixFactorizationModel(nn.Module):
     
     def _init_weights(self):
         """Initialize embeddings with small random values"""
-        # Use Xavier/Glorot initialization for better gradient flow
-        nn.init.xavier_normal_(self.user_embedding.weight, gain=0.1)
-        nn.init.xavier_normal_(self.item_embedding.weight, gain=0.1)
+        # Use smaller initialization for better stability
+        nn.init.normal_(self.user_embedding.weight, 0, 0.05)
+        nn.init.normal_(self.item_embedding.weight, 0, 0.05)
         
-        # Initialize biases to small values instead of zeros
-        nn.init.normal_(self.user_bias.weight, 0, 0.01)
-        nn.init.normal_(self.item_bias.weight, 0, 0.01)
+        # Initialize biases to zeros for stability
+        nn.init.zeros_(self.user_bias.weight)
+        nn.init.zeros_(self.item_bias.weight)
         
-        # Initialize global bias to a small positive value for binary classification
-        nn.init.constant_(self.global_bias, 0.01)
+        # Initialize global bias to zero
+        nn.init.constant_(self.global_bias, 0.0)
 
     def forward(self, user_ids: torch.Tensor, item_ids: torch.Tensor) -> torch.Tensor:
         """
@@ -52,6 +56,10 @@ class MatrixFactorizationModel(nn.Module):
         user_embeds: torch.Tensor = self.user_embedding(user_ids)
         item_embeds: torch.Tensor = self.item_embedding(item_ids)
         
+        # Apply batch normalization
+        user_embeds = self.user_bn(user_embeds)
+        item_embeds = self.item_bn(item_embeds)
+        
         # Apply dropout only during training
         if self.training:
             user_embeds = self.dropout(user_embeds)
@@ -64,7 +72,7 @@ class MatrixFactorizationModel(nn.Module):
 
         return predictions
     
-    def loss(self, loss_type: str, predictions: torch.Tensor, targets: torch.Tensor, l2_reg: float = 0.01) -> torch.Tensor:
+    def loss(self, loss_type: str, predictions: torch.Tensor, targets: torch.Tensor, l2_reg: float = 0.01, pos_weight: float = 1.0) -> torch.Tensor:
         """
         Compute the loss between predictions and targets.
 
@@ -73,14 +81,16 @@ class MatrixFactorizationModel(nn.Module):
             predictions (torch.Tensor): Predicted scores.
             targets (torch.Tensor): Ground truth scores.
             l2_reg (float): L2 regularization strength.
+            pos_weight (float): Weight for positive class in BCE loss.
 
         Returns:
             torch.Tensor: Computed loss.
         """
         
         if loss_type == 'bce_logits':
-            # Use BCEWithLogitsLoss for numerical stability
-            loss_fn = nn.BCEWithLogitsLoss()
+            # Use BCEWithLogitsLoss with pos_weight for class imbalance
+            pos_weight_tensor = torch.tensor(pos_weight, device=predictions.device)
+            loss_fn = nn.BCEWithLogitsLoss(pos_weight=pos_weight_tensor)
             base_loss = loss_fn(predictions, targets)
         else:
             # Compute base loss
@@ -97,11 +107,10 @@ class MatrixFactorizationModel(nn.Module):
                 predictions = torch.sigmoid(predictions)
             base_loss = loss_functions[loss_type](predictions, targets)
         
-        # Add L2 regularization
+        # Add L2 regularization only to embeddings (not biases)
         l2_loss = 0
-        for param in self.parameters():
-            if param.requires_grad and len(param.shape) > 1:  # Only regularize embeddings
-                l2_loss += torch.norm(param, p=2)
+        l2_loss += torch.norm(self.user_embedding.weight, p=2)
+        l2_loss += torch.norm(self.item_embedding.weight, p=2)
         
         total_loss = base_loss + l2_reg * l2_loss
         return total_loss

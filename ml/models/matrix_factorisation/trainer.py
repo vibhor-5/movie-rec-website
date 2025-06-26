@@ -47,32 +47,64 @@ class MatrixFactorizationTrainer(RecommenderModel):
 
         self.l2_reg = config.get('l2_reg', 0.01)
         self.optimizer = torch.optim.Adam(self.model.parameters(), lr=config.get('learning_rate', 0.001))
+        
+        # More conservative scheduler settings
         self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', patience=3, factor=0.5
+            self.optimizer, mode='min', patience=5, factor=0.3, verbose=True
         )
+        
         self.loss_type = config.get('loss', 'bce_logits')
         self.is_binary = config.get('binarize', True)
         self.threshold = config.get('threshold', 0.5)
         
-        # Check class distribution
+        # Calculate class weights for imbalanced data
+        self.pos_weight = self._calculate_pos_weight()
+        print(f"Calculated pos_weight: {self.pos_weight}")
         
+        # Early stopping parameters
+        self.early_stopping_patience = config.get('early_stopping_patience', 10)
+        self.best_val_loss = float('inf')
+        self.patience_counter = 0
+        self.best_model_state = None
         
    
+    def _calculate_pos_weight(self) -> float:
+        """Calculate positive class weight for handling class imbalance"""
+        if not self.is_binary:
+            return 1.0
+            
+        # Count positive and negative samples in training data
+        train_loader = self.dataset.get_dataloader(self.train_data, batch_size=1024)
+        pos_count = 0
+        neg_count = 0
+        
+        with torch.no_grad():
+            for batch in train_loader:
+                _, _, ratings = batch
+                pos_count += (ratings == 1).sum().item()
+                neg_count += (ratings == 0).sum().item()
+        
+        if pos_count == 0:
+            return 1.0
+            
+        pos_weight = neg_count / pos_count
+        print(f"Dataset stats - Positive: {pos_count}, Negative: {neg_count}")
+        return min(pos_weight, 10.0)  # Cap the weight to prevent extreme values
 
     def train_epoch(self, batch: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> Dict[str,float]:
         user_ids, item_ids, ratings = batch
         self.optimizer.zero_grad()
         
         predictions = self.model(user_ids, item_ids)
-        loss = self.model.loss(self.loss_type, predictions, ratings, self.l2_reg)
+        loss = self.model.loss(self.loss_type, predictions, ratings, self.l2_reg, self.pos_weight)
         
         loss.backward()
-        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
+        # Gradient clipping for stability
+        torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=0.5)
         self.optimizer.step()
         
         # Calculate batch metrics for monitoring
         batch_metrics = {'loss': loss.item()}
-        
         
         return batch_metrics
     
@@ -85,7 +117,6 @@ class MatrixFactorizationTrainer(RecommenderModel):
         for epoch in range(self.config.get('num_epochs', 10)):
             self.model.train()
             epoch_loss = 0.0
-            epoch_metrics = {}
             
             progress_bar = tqdm(train_loader, desc=f"Epoch {epoch+1}", leave=False)
             
@@ -106,26 +137,51 @@ class MatrixFactorizationTrainer(RecommenderModel):
             avg_epoch_loss = epoch_loss / len(train_loader)
             print(f"\nEpoch {epoch+1}, Avg Loss: {avg_epoch_loss:.4f}")
             
-            
-            wandb.log({'avg_epoch_loss': avg_epoch_loss})
+            wandb.log({'avg_epoch_loss': avg_epoch_loss, 'epoch': epoch+1})
             
             if val_loader is not None:
                 val_metrics = self.validate(val_loader)
                 print(f"Validation metrics: {val_metrics}")
-                wandb.log(val_metrics)
+                wandb.log({**val_metrics, 'epoch': epoch+1})
+                
+                # Early stopping check
+                val_loss = val_metrics['val_loss']
+                if val_loss < self.best_val_loss:
+                    self.best_val_loss = val_loss
+                    self.patience_counter = 0
+                    # Save best model state
+                    self.best_model_state = self.model.state_dict().copy()
+                    print(f"New best validation loss: {val_loss:.4f}")
+                else:
+                    self.patience_counter += 1
+                    print(f"No improvement. Patience: {self.patience_counter}/{self.early_stopping_patience}")
                 
                 # Use validation loss for scheduler
-                self.scheduler.step(val_metrics['val_loss'])
+                self.scheduler.step(val_loss)
                 
-            # Save model checkpoint
-            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-            self.save(f"{self.checkpoints_dir}/{self.model_name}_model_epoch_{epoch+1}_{timestamp}.pth")
-            
+                # Early stopping
+                if self.patience_counter >= self.early_stopping_patience:
+                    print(f"Early stopping triggered after {epoch+1} epochs")
+                    break
+                
+            # Save model checkpoint every 5 epochs
             if (epoch+1) % 5 == 0:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                self.save(f"{self.checkpoints_dir}/{self.model_name}_model_epoch_{epoch+1}_{timestamp}.pth")
+                
                 test_results = self.test()
                 print(f"Test results: {test_results}")
-                wandb.log(test_results)
+                wandb.log({**test_results, 'epoch': epoch+1})
 
+        # Load best model if early stopping was used
+        if self.best_model_state is not None:
+            self.model.load_state_dict(self.best_model_state)
+            print("Loaded best model from early stopping")
+            
+        # Final save
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.save(f"{self.checkpoints_dir}/{self.model_name}_final_{timestamp}.pth")
+        
         wandb.finish()
 
     def validate(self, val_loader: DataLoader) -> Dict[str, float]:
@@ -138,7 +194,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
             for batch in val_loader:
                 user_ids, item_ids, ratings = [x.to(self.device) for x in batch]
                 predictions = self.model(user_ids, item_ids)
-                loss = self.model.loss(self.loss_type, predictions, ratings, self.l2_reg)
+                loss = self.model.loss(self.loss_type, predictions, ratings, self.l2_reg, self.pos_weight)
                 
                 total_loss += loss.item()
                 predictions_list.append(predictions.cpu())
@@ -165,11 +221,11 @@ class MatrixFactorizationTrainer(RecommenderModel):
             y_prob = probabilities.numpy()
             
             # Print distribution for debugging
-            print("\nValidation Prediction Distribution:")
+            print(f"\nValidation Stats:")
             print(f"Predicted 1s: {np.sum(y_pred == 1)} / {len(y_pred)} ({np.mean(y_pred)*100:.2f}%)")
             print(f"Actual 1s: {np.sum(y_true == 1)} / {len(y_true)} ({np.mean(y_true)*100:.2f}%)")
             print(f"Avg prediction probability: {np.mean(y_prob):.4f}")
-            print(f"Min/Max prediction probability: {np.min(y_prob):.4f} / {np.max(y_prob):.4f}")
+            print(f"Prediction probability range: [{np.min(y_prob):.4f}, {np.max(y_prob):.4f}]")
             
             # Calculate binary classification metrics
             try:

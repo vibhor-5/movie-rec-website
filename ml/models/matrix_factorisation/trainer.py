@@ -12,7 +12,6 @@ import torch.nn.functional as F
 import wandb
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
 
 
 class MatrixFactorizationTrainer(RecommenderModel):
@@ -56,57 +55,16 @@ class MatrixFactorizationTrainer(RecommenderModel):
         self.threshold = config.get('threshold', 0.5)
         
         # Check class distribution
-        self._check_class_distribution()
         
-    def _check_class_distribution(self):
-        """Check the distribution of classes in the dataset"""
-        if self.is_binary:
-            # Get all ratings from training data
-            train_ratings = []
-            train_loader = self.dataset.get_dataloader(self.train_data, batch_size=1000)
-            
-            for batch in train_loader:
-                _, _, ratings = batch
-                train_ratings.extend(ratings.tolist())
-            
-            train_ratings = np.array(train_ratings)
-            pos_count = np.sum(train_ratings == 1)
-            neg_count = np.sum(train_ratings == 0)
-            total = len(train_ratings)
-            
-            print(f"\n=== CLASS DISTRIBUTION ===")
-            print(f"Positive samples (1): {pos_count} ({pos_count/total*100:.2f}%)")
-            print(f"Negative samples (0): {neg_count} ({neg_count/total*100:.2f}%)")
-            print(f"Total samples: {total}")
-            print(f"Class ratio (pos/neg): {pos_count/neg_count:.3f}")
-            
-            # Calculate class weights for imbalanced data
-            if pos_count > 0 and neg_count > 0:
-                self.pos_weight = torch.tensor(neg_count / pos_count, device=self.device)
-                print(f"Calculated pos_weight for BCEWithLogitsLoss: {self.pos_weight:.3f}")
-            else:
-                self.pos_weight = torch.tensor(1.0, device=self.device)
-                print("Warning: One class is missing, using pos_weight=1.0")
-            print("=" * 30)
+        
+   
 
     def train_epoch(self, batch: Tuple[torch.Tensor, torch.Tensor, torch.Tensor]) -> Dict[str,float]:
         user_ids, item_ids, ratings = batch
         self.optimizer.zero_grad()
         
         predictions = self.model(user_ids, item_ids)
-        
-        # Use pos_weight for imbalanced binary classification
-        if self.is_binary and self.loss_type == 'bce_logits':
-            loss_fn = nn.BCEWithLogitsLoss(pos_weight=self.pos_weight)
-            loss = loss_fn(predictions, ratings)
-            # Add L2 regularization manually
-            l2_loss = 0
-            for param in self.model.parameters():
-                if param.requires_grad and len(param.shape) > 1:
-                    l2_loss += torch.norm(param, p=2)
-            loss = loss + self.l2_reg * l2_loss
-        else:
-            loss = self.model.loss(self.loss_type, predictions, ratings, self.l2_reg)
+        loss = self.model.loss(self.loss_type, predictions, ratings, self.l2_reg)
         
         loss.backward()
         torch.nn.utils.clip_grad_norm_(self.model.parameters(), max_norm=1.0)
@@ -115,30 +73,6 @@ class MatrixFactorizationTrainer(RecommenderModel):
         # Calculate batch metrics for monitoring
         batch_metrics = {'loss': loss.item()}
         
-        if self.is_binary:
-            with torch.no_grad():
-                probs = torch.sigmoid(predictions)
-                binary_preds = (probs >= self.threshold).float()
-                
-                # Calculate batch accuracy
-                batch_acc = (binary_preds == ratings).float().mean().item()
-                batch_metrics['batch_accuracy'] = batch_acc
-                
-                # Count predictions
-                pred_pos = binary_preds.sum().item()
-                pred_neg = (binary_preds == 0).sum().item()
-                actual_pos = ratings.sum().item()
-                actual_neg = (ratings == 0).sum().item()
-                
-                batch_metrics.update({
-                    'pred_positive': pred_pos,
-                    'pred_negative': pred_neg,
-                    'actual_positive': actual_pos,
-                    'actual_negative': actual_neg,
-                    'avg_prediction_prob': probs.mean().item(),
-                    'min_prediction_prob': probs.min().item(),
-                    'max_prediction_prob': probs.max().item()
-                })
         
         return batch_metrics
     
@@ -161,14 +95,6 @@ class MatrixFactorizationTrainer(RecommenderModel):
                 metrics = self.train_epoch(tuple(x.to(self.device) for x in batch))
                 batch_loss = metrics['loss']
                 epoch_loss += float(batch_loss)
-                
-                # Accumulate other metrics
-                for key, value in metrics.items():
-                    if key != 'loss':
-                        if key not in epoch_metrics:
-                            epoch_metrics[key] = 0
-                        epoch_metrics[key] += value
-                
                 batch_count += 1
                 progress_bar.set_postfix({'loss': f"{batch_loss:.4f}"})
                 
@@ -178,17 +104,10 @@ class MatrixFactorizationTrainer(RecommenderModel):
 
             # Calculate average metrics for the epoch
             avg_epoch_loss = epoch_loss / len(train_loader)
-            for key in epoch_metrics:
-                epoch_metrics[key] = epoch_metrics[key] / len(train_loader)
-            
             print(f"\nEpoch {epoch+1}, Avg Loss: {avg_epoch_loss:.4f}")
-            if self.is_binary:
-                print(f"Avg Batch Accuracy: {epoch_metrics.get('batch_accuracy', 0):.4f}")
-                print(f"Avg Prediction Probability: {epoch_metrics.get('avg_prediction_prob', 0):.4f}")
-                print(f"Avg Predicted Positive: {epoch_metrics.get('pred_positive', 0):.2f}")
-                print(f"Avg Predicted Negative: {epoch_metrics.get('pred_negative', 0):.2f}")
             
-            wandb.log({'avg_epoch_loss': avg_epoch_loss, **epoch_metrics})
+            
+            wandb.log({'avg_epoch_loss': avg_epoch_loss})
             
             if val_loader is not None:
                 val_metrics = self.validate(val_loader)
@@ -219,13 +138,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
             for batch in val_loader:
                 user_ids, item_ids, ratings = [x.to(self.device) for x in batch]
                 predictions = self.model(user_ids, item_ids)
-                
-                # Calculate loss with same logic as training
-                if self.is_binary and self.loss_type == 'bce_logits':
-                    loss_fn = nn.BCEWithLogitsLoss(pos_weight=self.pos_weight)
-                    loss = loss_fn(predictions, ratings)
-                else:
-                    loss = self.model.loss(self.loss_type, predictions, ratings, self.l2_reg)
+                loss = self.model.loss(self.loss_type, predictions, ratings, self.l2_reg)
                 
                 total_loss += loss.item()
                 predictions_list.append(predictions.cpu())
@@ -252,7 +165,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
             y_prob = probabilities.numpy()
             
             # Print distribution for debugging
-            print(f"\nValidation Prediction Distribution:")
+            print("\nValidation Prediction Distribution:")
             print(f"Predicted 1s: {np.sum(y_pred == 1)} / {len(y_pred)} ({np.mean(y_pred)*100:.2f}%)")
             print(f"Actual 1s: {np.sum(y_true == 1)} / {len(y_true)} ({np.mean(y_true)*100:.2f}%)")
             print(f"Avg prediction probability: {np.mean(y_prob):.4f}")

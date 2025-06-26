@@ -5,10 +5,6 @@ import wandb
 mf_config={
     "model_name": "matrix_factorization",
     "checkpoints_dir": "checkpoints",
-    "num_epochs": 15,
-    "embedding_dim": 32,  # Reduced to prevent overfitting
-    "dropout_rate": 0.3,  # Reduced dropout
-    "learning_rate": 0.001,  # Increased learning rate
     "num_epochs": 10,
     "embedding_dim": 64,
     "dropout_rate": 0.5,

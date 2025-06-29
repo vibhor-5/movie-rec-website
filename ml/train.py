@@ -10,7 +10,7 @@ mf_config={
     "dropout_rate": 0.3,  # Reduced from 0.5
     "learning_rate": 0.0001,  # Reduced for stability
     "loss": "bce_logits",
-    "data_path": "ml-1m/ratings.dat",
+    "data_path": "data/ml-32m/ratings.csv",
     "dataset_type": "csv",
     "separator": ',',
     "batch_size": 256,  # Increased for more stable gradients
@@ -26,14 +26,14 @@ mf_config={
 def main():
     model = MatrixFactorizationTrainer()
     model.build(mf_config)  
-    # model.train()
-    model.load("/Users/vibhorkumar/Desktop/projs/project/ml/checkpoints/final_checkpoints/matrix_factorization_final_20250626_230836.pth")
+    model.train()
+    # model.load("/Users/vibhorkumar/Desktop/projs/project/ml/checkpoints/final_checkpoints/matrix_factorization_final_20250626_230836.pth")
     print(model.test())
     # Test prediction
-    item_ids = torch.tensor([7, 8, 9, 10])
-    ratings = torch.tensor([1.0, 1.0, 0.0, 0.0])
+    # item_ids = torch.tensor([7, 8, 9, 10])
+    # ratings = torch.tensor([1.0, 1.0, 0.0, 0.0])
     
-    print(model.predict(item_ids=item_ids, ratings=ratings))
+    #print(model.predict(item_ids=item_ids, ratings=ratings))
 
 if __name__ == "__main__":
     main()

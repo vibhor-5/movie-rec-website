@@ -75,8 +75,8 @@ class DatasetLoader:
             data = data.with_columns(
                 pl.when(pl.col('rating') >= min_rating).then(1).otherwise(0).alias('rating')
             )
-        unique_users = data.select(pl.col('user_id').unique()).collect().to_list()
-        unique_movies = data.select(pl.col("movie_id").unique()).collect().to_list()
+        unique_users = data.select(pl.col('user_id').unique()).to_list()
+        unique_movies = data.select(pl.col("movie_id").unique()).to_list()
         uid_map= {uid: i for i, uid in enumerate(unique_users)}
         mid_map= {mid: i for i, mid in enumerate(unique_movies)}
 
@@ -100,7 +100,7 @@ class DatasetLoader:
         train_end = int(n * (1 - self.val_ratio - self.test_ratio))
         val_end = int(n * (1 - self.test_ratio))
 
-        data=self.data.sample(fraction=1.0,shuffle=True).collect()  # Shuffle the data before splitting
+        data=self.data.sample(fraction=1.0,shuffle=True)  # Shuffle the data before splitting
         train_data = data[:train_end]
         val_data = data[train_end:val_end]
         test_data = data[val_end:]

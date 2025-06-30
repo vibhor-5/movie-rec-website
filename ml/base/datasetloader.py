@@ -65,7 +65,7 @@ class DatasetLoader:
         if dataset_type == "parquet":
             data = pl.read_parquet(path)
         else:
-            data= pl.scan_csv(path,
+            data= pl.read_csv(path,
                               separator=separator,
                               has_header=True,
                               new_columns=["user_id", "movie_id", "rating","timestamp"],
@@ -75,9 +75,9 @@ class DatasetLoader:
             data = data.with_columns(
                 pl.when(pl.col('rating') >= min_rating).then(1).otherwise(0).alias('rating')
             )
-        unique_users = data.select(pl.col('user_id').unique()).collect()
-        unique_movies = data.select(pl.col("movie_id").unique()).collect()
-        uid_map= {uid: i for i, uid in enumerate(unique_users)}
+        unique_users = data.select(pl.col('user_id').unique()).collect().to_list()
+        unique_movies = data.select(pl.col("movie_id").unique()).collect().to_list()
+        uid_map= {uid: i for i, uid in enumerate(unique_users.)}
         mid_map= {mid: i for i, mid in enumerate(unique_movies)}
 
         data = data.with_columns(

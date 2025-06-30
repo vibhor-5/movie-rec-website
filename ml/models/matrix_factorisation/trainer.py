@@ -164,11 +164,9 @@ class MatrixFactorizationTrainer(RecommenderModel):
                     print(f"Early stopping triggered after {epoch+1} epochs")
                     break
                 
-            # Save model checkpoint every 5 epochs
-            if (epoch+1) % 5 == 0:
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                self.save(f"{self.checkpoints_dir}/{self.model_name}_model_epoch_{epoch+1}_{timestamp}.pth")
-                
+            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+            self.save(f"{self.checkpoints_dir}/{self.model_name}_model_epoch_{epoch+1}_{timestamp}.pth")
+            if (epoch+1) % 5 == 0: 
                 test_results = self.test()
                 print(f"Test results: {test_results}")
                 test_results_prefixed = {f"test_{k}": v for k, v in test_results.items()}

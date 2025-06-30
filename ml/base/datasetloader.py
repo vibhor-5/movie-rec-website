@@ -77,7 +77,7 @@ class DatasetLoader:
             )
         unique_users = data.select(pl.col('user_id').unique()).collect().to_list()
         unique_movies = data.select(pl.col("movie_id").unique()).collect().to_list()
-        uid_map= {uid: i for i, uid in enumerate(unique_users.)}
+        uid_map= {uid: i for i, uid in enumerate(unique_users)}
         mid_map= {mid: i for i, mid in enumerate(unique_movies)}
 
         data = data.with_columns(

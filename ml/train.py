@@ -7,7 +7,7 @@ mf_config={
     "checkpoints_dir": "checkpoints",
     "num_epochs": 50,  # Increased for early stopping
     "embedding_dim": 128,
-    "dropout_rate": 0.3,  # Reduced from 0.5
+    "dropout_rate": 0.4,  # Reduced from 0.5
     "learning_rate": 0.0001,  # Reduced for stability
     "loss": "bce_logits",
     "data_path": "data/ml-32m/ratings.csv",
@@ -17,7 +17,7 @@ mf_config={
     "binarize": True,
     "min_rating": 4,
     "wandb_project": "mf_training_fixed",
-    "l2_reg": 0.001,  # Reduced regularization
+    "l2_reg": 0.002,  # Reduced regularization
     "threshold": 0.5,
     "early_stopping_patience": 6  # Early stopping patience
 }

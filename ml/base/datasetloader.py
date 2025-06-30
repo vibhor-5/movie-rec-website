@@ -43,8 +43,8 @@ class DatasetLoader:
         self.batch_size = batch_size
         self.val_ratio = val_ratio
         self.test_ratio = test_ratio
-        self.num_users = self.data['user_id'].n_unique()
-        self.num_items = self.data['movie_id'].n_unique()
+        self.num_users = len(self._uid_map)
+        self.num_items = len(self._mid_map) 
         self.train_data, self.val_data, self.test_data = self.split_data()
 
 

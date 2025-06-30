@@ -1,0 +1,11 @@
+{
+    "python.defaultInterpreterPath": "/Users/vibhorkumar/Desktop/projs/project/ml/env/bin/python3",
+    "python.analysis.typeCheckingMode": "basic",
+    "python.analysis.diagnosticMode": "workspace",
+    "python.linting.enabled": true,
+    "python.linting.ruffEnabled": true,
+    "python.formatting.provider": "none",  // if Ruff does formatting via fix
+    "[python]": {
+        "editor.defaultFormatter": "charliermarsh.ruff"
+    }
+}

@@ -117,7 +117,7 @@ class DatasetLoader:
         Returns:
             DataLoader: DataLoader for the dataset.
         """
-        return DataLoader(dataset, batch_size=self.batch_size, shuffle=True,num_workers=num_workers)
+        return DataLoader(dataset, batch_size=self.batch_size, shuffle=True,num_workers=num_workers,persistent_workers=True)
     
     @property
     def uid_map(self) -> Dict:

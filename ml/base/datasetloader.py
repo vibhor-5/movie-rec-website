@@ -75,8 +75,8 @@ class DatasetLoader:
             data = data.with_columns(
                 pl.when(pl.col('rating') >= min_rating).then(1).otherwise(0).alias('rating')
             )
-        unique_users = data["user_id"].to_list()
-        unique_movies = data["movie_id"].to_list()
+        unique_users = data.get_column("user_id").to_list()
+        unique_movies = data.get_column("movie_id").to_list()
         uid_map= {uid: i for i, uid in enumerate(unique_users)}
         mid_map= {mid: i for i, mid in enumerate(unique_movies)}
 

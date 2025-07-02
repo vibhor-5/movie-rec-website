@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { ChevronRight, Film, BookOpen, Heart } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
 import MovieCarousel from '../../components/common/MovieCarousel/MovieCarousel';
+import MovieOverlay from '../../components/common/MovieOverlay/MovieOverlay';
 import RecommendationSection from '../../components/dashboard/RecommendationSection/RecommendationSection';
 import LoadingSpinner from '../../components/common/LoadingSpinner/LoadingSpinner';
 import styles from './Home.module.css';
@@ -26,6 +27,8 @@ const Home: React.FC = () => {
   const { isAuthenticated } = useAuthContext();
   const [isLoading, setIsLoading] = useState(true);
   const [featuredMovies, setFeaturedMovies] = useState<Movie[]>([]);
+  const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
+  const [isOverlayOpen, setIsOverlayOpen] = useState(false);
   const [recommendations, setRecommendations] = useState({
     collaborativeMovies: [] as Movie[],
     contentBasedMovies: [] as Movie[],
@@ -57,8 +60,31 @@ const Home: React.FC = () => {
   }, []);
 
   const handleMovieSelect = (movie: Movie) => {
-    // TODO: Implement movie selection logic
-    console.log('Selected movie:', movie);
+    setSelectedMovie(movie);
+    setIsOverlayOpen(true);
+  };
+
+  const handleCloseOverlay = () => {
+    setIsOverlayOpen(false);
+    setSelectedMovie(null);
+  };
+
+  const handleAddToWatchlist = (movie: Movie) => {
+    // TODO: Implement add to watchlist functionality
+    console.log('Added to watchlist:', movie.title);
+    // You could show a toast notification here
+  };
+
+  const handleMarkAsWatched = (movie: Movie) => {
+    // TODO: Implement mark as watched functionality
+    console.log('Marked as watched:', movie.title);
+    // You could show a toast notification here
+  };
+
+  const handleRateMovie = (movie: Movie, rating: number) => {
+    // TODO: Implement rating functionality
+    console.log('Rated movie:', movie.title, 'Rating:', rating);
+    // You could show a toast notification here
   };
 
   if (isLoading) {
@@ -74,7 +100,7 @@ const Home: React.FC = () => {
     return (
       <div className="flex flex-col min-h-screen">
         {/* Hero Section */}
-        <section className="relative bg-gradient-to-br from-blue-900 to-blue-800 text-white">
+        <section className="relative bg-gradient-to-br from-slate-800 to-slate-900 text-white">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28">
             <div className="md:w-2/3">
               <h1 className="text-4xl md:text-5xl font-bold tracking-tight mb-4">
@@ -104,42 +130,42 @@ const Home: React.FC = () => {
         </section>
 
         {/* Features Section */}
-        <section className="py-16 bg-gray-50">
+        <section className="py-16 bg-slate-800">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="text-center mb-16">
-              <h2 className="text-3xl font-bold text-gray-900 mb-4">How MovieRec Works</h2>
-              <p className="text-lg text-gray-600 max-w-3xl mx-auto">
+              <h2 className="text-3xl font-bold text-white mb-4">How MovieRec Works</h2>
+              <p className="text-lg text-slate-300 max-w-3xl mx-auto">
                 Our platform combines multiple recommendation algorithms to find the perfect movies for you while explaining the technology behind it.
               </p>
             </div>
 
             <div className="grid md:grid-cols-3 gap-10">
-              <div className="bg-white rounded-xl shadow-sm p-8 transition-all duration-300 hover:shadow-md">
+              <div className="bg-slate-700 rounded-xl shadow-sm p-8 transition-all duration-300 hover:shadow-md">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                   <Heart className="w-6 h-6 text-blue-800" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Personalized Recommendations</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl font-bold text-white mb-3">Personalized Recommendations</h3>
+                <p className="text-slate-300">
                   Rate movies you've watched and receive tailored recommendations based on your unique taste profile.
                 </p>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-8 transition-all duration-300 hover:shadow-md">
+              <div className="bg-slate-700 rounded-xl shadow-sm p-8 transition-all duration-300 hover:shadow-md">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                   <BookOpen className="w-6 h-6 text-blue-800" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Educational Insights</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl font-bold text-white mb-3">Educational Insights</h3>
+                <p className="text-slate-300">
                   Learn how recommendation algorithms work with interactive visualizations and simple explanations.
                 </p>
               </div>
 
-              <div className="bg-white rounded-xl shadow-sm p-8 transition-all duration-300 hover:shadow-md">
+              <div className="bg-slate-700 rounded-xl shadow-sm p-8 transition-all duration-300 hover:shadow-md">
                 <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mb-6">
                   <Film className="w-6 h-6 text-blue-800" />
                 </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">Multiple Algorithms</h3>
-                <p className="text-gray-600">
+                <h3 className="text-xl font-bold text-white mb-3">Multiple Algorithms</h3>
+                <p className="text-slate-300">
                   Compare different recommendation techniques and understand why specific movies are suggested to you.
                 </p>
               </div>
@@ -175,6 +201,7 @@ const Home: React.FC = () => {
           <MovieCarousel
             title="Featured Movies"
             movies={featuredMovies}
+            onMovieClick={handleMovieSelect}
           />
         </section>
 
@@ -186,6 +213,18 @@ const Home: React.FC = () => {
           onMovieSelect={handleMovieSelect}
         />
       </main>
+
+      {/* Movie Overlay Modal */}
+      {selectedMovie && (
+        <MovieOverlay
+          movie={selectedMovie}
+          isOpen={isOverlayOpen}
+          onClose={handleCloseOverlay}
+          onAddToWatchlist={handleAddToWatchlist}
+          onMarkAsWatched={handleMarkAsWatched}
+          onRate={handleRateMovie}
+        />
+      )}
     </div>
   );
 };

@@ -40,6 +40,7 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
           title="Our Best Picks"
           movies={hybridMovies}
           isLoading={isLoading}
+          onMovieClick={onMovieSelect}
         />
       </section>
 
@@ -52,6 +53,7 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
           title="Content-Based Recommendations"
           movies={contentBasedMovies}
           isLoading={isLoading}
+          onMovieClick={onMovieSelect}
         />
       </section>
 
@@ -64,6 +66,7 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
           title="Collaborative Recommendations"
           movies={collaborativeMovies}
           isLoading={isLoading}
+          onMovieClick={onMovieSelect}
         />
       </section>
 
@@ -76,6 +79,7 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
           title="Trending Movies"
           movies={trendingMovies}
           isLoading={isLoading}
+          onMovieClick={onMovieSelect}
         />
       </section>
     </div>

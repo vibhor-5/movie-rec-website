@@ -11,6 +11,7 @@ interface MovieCardProps {
   genres: string[];
   overview: string;
   onClick?: () => void;
+  showAsLink?: boolean;
 }
 
 const MovieCard: React.FC<MovieCardProps> = ({
@@ -21,7 +22,8 @@ const MovieCard: React.FC<MovieCardProps> = ({
   voteAverage = 0,
   genres = [],
   overview = '',
-  onClick
+  onClick,
+  showAsLink = false
 }) => {
   const year = releaseDate ? new Date(releaseDate).getFullYear() : 'Unknown';
   const posterUrl = posterPath || '/images/placeholders/movie-placeholder.jpg';
@@ -39,7 +41,7 @@ const MovieCard: React.FC<MovieCardProps> = ({
           loading="lazy"
           onError={(e) => {
             const target = e.target as HTMLImageElement;
-            target.src = '/images/placeholders/movie-placeholder.jpg';
+            target.src = 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300';
           }}
         />
         <div className={styles.overlay}>
@@ -69,16 +71,24 @@ const MovieCard: React.FC<MovieCardProps> = ({
 
   if (onClick) {
     return (
-      <div className={styles.card} onClick={onClick}>
+      <div className={styles.card} onClick={onClick} style={{ cursor: 'pointer' }}>
         {cardContent}
       </div>
     );
   }
 
+  if (showAsLink) {
+    return (
+      <Link to={`/movie/${id}`} className={styles.card}>
+        {cardContent}
+      </Link>
+    );
+  }
+
   return (
-    <Link to={`/movie/${id}`} className={styles.card}>
+    <div className={styles.card}>
       {cardContent}
-    </Link>
+    </div>
   );
 };
 

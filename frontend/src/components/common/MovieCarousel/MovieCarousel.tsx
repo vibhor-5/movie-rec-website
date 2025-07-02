@@ -16,12 +16,14 @@ interface MovieCarouselProps {
   title: string;
   movies: Movie[];
   isLoading?: boolean;
+  onMovieClick?: (movie: Movie) => void;
 }
 
 const MovieCarousel: React.FC<MovieCarouselProps> = ({
   title,
   movies,
-  isLoading = false
+  isLoading = false,
+  onMovieClick
 }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
@@ -90,7 +92,10 @@ const MovieCarousel: React.FC<MovieCarouselProps> = ({
         <div className={styles.movieList}>
           {movies.map((movie) => (
             <div key={movie.id} className={styles.movieCard}>
-              <MovieCard {...movie} />
+              <MovieCard 
+                {...movie} 
+                onClick={onMovieClick ? () => onMovieClick(movie) : undefined}
+              />
             </div>
           ))}
         </div>

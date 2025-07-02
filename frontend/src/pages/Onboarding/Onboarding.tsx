@@ -17,6 +17,7 @@ interface Movie {
 interface MovieRating {
   movieId: number;
   rating: number;
+  watched: boolean;
 }
 
 const POPULAR_MOVIES: Movie[] = [
@@ -61,7 +62,7 @@ const Onboarding: React.FC = () => {
   const totalSteps = 3;
   const minRatings = 10;
   const progress = (currentStep / totalSteps) * 100;
-  const ratedMoviesCount = ratings.length;
+  const ratedMoviesCount = ratings.filter(r => r.watched && r.rating > 0).length;
   const canContinue = ratedMoviesCount >= minRatings;
 
   useEffect(() => {
@@ -104,14 +105,27 @@ const Onboarding: React.FC = () => {
           r.movieId === movieId ? { ...r, rating } : r
         );
       } else {
-        return [...prev, { movieId, rating }];
+        return [...prev, { movieId, rating, watched: true }];
       }
     });
   };
 
-  const getMovieRating = (movieId: number): number => {
+  const handleWatchedToggle = (movieId: number, watched: boolean) => {
+    setRatings(prev => {
+      const existingRating = prev.find(r => r.movieId === movieId);
+      if (existingRating) {
+        return prev.map(r =>
+          r.movieId === movieId ? { ...r, watched, rating: watched ? r.rating : 0 } : r
+        );
+      } else {
+        return [...prev, { movieId, rating: 0, watched }];
+      }
+    });
+  };
+
+  const getMovieRating = (movieId: number): MovieRating => {
     const rating = ratings.find(r => r.movieId === movieId);
-    return rating ? rating.rating : 0;
+    return rating || { movieId, rating: 0, watched: false };
   };
 
   const handleContinue = () => {
@@ -211,49 +225,79 @@ const Onboarding: React.FC = () => {
         </div>
       ) : (
         <div className={styles.movieGrid}>
-          {filteredMovies.map(movie => (
-            <div
-              key={movie.id}
-              className={`${styles.movieCard} ${getMovieRating(movie.id) > 0 ? styles.selected : ''}`}
-            >
-              <div className={styles.moviePosterContainer}>
-                <img
-                  src={movie.poster}
-                  alt={movie.title}
-                  className={styles.moviePoster}
-                  onError={(e) => {
-                    const target = e.target as HTMLImageElement;
-                    target.src = 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300';
-                  }}
-                />
-                <div className={styles.movieOverlay}>
-                  <div className={styles.movieRating}>
-                    <Star className={styles.imdbStar} />
-                    <span>{movie.rating}</span>
+          {filteredMovies.map(movie => {
+            const movieRating = getMovieRating(movie.id);
+            return (
+              <div
+                key={movie.id}
+                className={`${styles.movieCard} ${movieRating.watched && movieRating.rating > 0 ? styles.selected : ''}`}
+              >
+                <div className={styles.moviePosterContainer}>
+                  <img
+                    src={movie.poster}
+                    alt={movie.title}
+                    className={styles.moviePoster}
+                    onError={(e) => {
+                      const target = e.target as HTMLImageElement;
+                      target.src = 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300';
+                    }}
+                  />
+                  <div className={styles.movieOverlay}>
+                    <div className={styles.movieRating}>
+                      <Star className={styles.imdbStar} />
+                      <span>{movie.rating}</span>
+                    </div>
+                  </div>
+                </div>
+                <div className={styles.movieInfo}>
+                  <h3 className={styles.movieTitle}>{movie.title}</h3>
+                  <div className={styles.movieMeta}>
+                    <span className={styles.movieYear}>{movie.year}</span>
+                    <span className={styles.movieGenres}>
+                      {movie.genres.slice(0, 2).join(', ')}
+                    </span>
+                  </div>
+                  <div className={styles.ratingSection}>
+                    <div className={styles.watchedCheckbox}>
+                      <input
+                        type="checkbox"
+                        id={`watched-${movie.id}`}
+                        checked={movieRating.watched}
+                        onChange={(e) => handleWatchedToggle(movie.id, e.target.checked)}
+                      />
+                      <label htmlFor={`watched-${movie.id}`} className={styles.watchedLabel}>
+                        I've watched this
+                      </label>
+                    </div>
+                    <div className={styles.ratingContainer}>
+                      {[1, 2, 3, 4, 5].map(star => (
+                        <Star
+                          key={star}
+                          className={`${styles.star} ${
+                            star <= movieRating.rating ? styles.filled : ''
+                          } ${!movieRating.watched ? styles.disabled : ''}`}
+                          onClick={() => {
+                            if (movieRating.watched) {
+                              handleMovieRating(movie.id, star);
+                            }
+                          }}
+                          fill={star <= movieRating.rating ? 'currentColor' : 'none'}
+                        />
+                      ))}
+                    </div>
+                    <div className={styles.ratingLabel}>
+                      {movieRating.watched 
+                        ? movieRating.rating > 0 
+                          ? `${movieRating.rating}/5 stars`
+                          : 'Click to rate'
+                        : 'Mark as watched to rate'
+                      }
+                    </div>
                   </div>
                 </div>
               </div>
-              <div className={styles.movieInfo}>
-                <h3 className={styles.movieTitle}>{movie.title}</h3>
-                <div className={styles.movieMeta}>
-                  <span className={styles.movieYear}>{movie.year}</span>
-                  <span className={styles.movieGenres}>
-                    {movie.genres.slice(0, 2).join(', ')}
-                  </span>
-                </div>
-                <div className={styles.ratingContainer}>
-                  {[1, 2, 3, 4, 5].map(star => (
-                    <Star
-                      key={star}
-                      className={`${styles.star} ${star <= getMovieRating(movie.id) ? styles.filled : ''}`}
-                      onClick={() => handleMovieRating(movie.id, star)}
-                      fill={star <= getMovieRating(movie.id) ? 'currentColor' : 'none'}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>
@@ -307,7 +351,7 @@ const Onboarding: React.FC = () => {
               <span className={styles.tasteLabel}>Average Rating</span>
               <span className={styles.tasteValue}>
                 {ratedMoviesCount > 0 
-                  ? (ratings.reduce((sum, r) => sum + r.rating, 0) / ratings.length).toFixed(1)
+                  ? (ratings.filter(r => r.watched && r.rating > 0).reduce((sum, r) => sum + r.rating, 0) / ratedMoviesCount).toFixed(1)
                   : '0.0'
                 } / 5.0
               </span>

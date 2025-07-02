@@ -15,6 +15,13 @@ from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_sc
 
 
 class MatrixFactorizationTrainer(RecommenderModel):
+
+    def model_build(self,config:dict):
+        self.config=config
+        self.model_name=config.get("model_name","mf_model")
+        self.device=config.get("device","cpu")
+        
+
     def build(self,config:dict):
         self.config = config
         self.model_name = config.get('model_name', 'matrix_factorization')
@@ -233,19 +240,19 @@ class MatrixFactorizationTrainer(RecommenderModel):
                 
                 print(f"Confusion Matrix: TP={tp}, TN={tn}, FP={fp}, FN={fn}")
                 
-                metrics.update({
-                    'accuracy': accuracy_score(y_true, y_pred),
-                    'precision': precision_score(y_true, y_pred, zero_division=0),
-                    'recall': recall_score(y_true, y_pred, zero_division=0),
-                    'f1_score': f1_score(y_true, y_pred, zero_division=0),
-                    'auc_roc': roc_auc_score(y_true, y_prob) if len(np.unique(y_true)) > 1 else 0.0,
-                    'true_positives': int(tp),
-                    'true_negatives': int(tn),
-                    'false_positives': int(fp),
-                    'false_negatives': int(fn),
-                    'avg_pred_prob': float(np.mean(y_prob)),
-                    'std_pred_prob': float(np.std(y_prob))
-                })
+                metrics.update(
+                    accuracy=float(accuracy_score(y_true, y_pred)),
+                    precision=float(precision_score(y_true, y_pred, zero_division=0)),
+                    recall=float(recall_score(y_true, y_pred, zero_division=0)),
+                    f1_score=float(f1_score(y_true, y_pred, zero_division=0)),
+                    auc_roc=float(roc_auc_score(y_true, y_prob)) if len(np.unique(y_true)) > 1 else 0.0,
+                    true_positives=int(tp),
+                    true_negatives=int(tn),
+                    false_positives=int(fp),
+                    false_negatives=int(fn),
+                    avg_pred_prob=float(np.mean(y_prob)),
+                    std_pred_prob=float(np.std(y_prob))
+                )
                 
                 # Calculate specificity
                 specificity = tn / (tn + fp) if (tn + fp) > 0 else 0.0

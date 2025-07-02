@@ -21,6 +21,9 @@ model User {
   password        String
   preferences     UserPreference[]
   createdAt       DateTime           @default(now())
+  recommendations Movie[]            @relation("UserRecommendations")
+  collab_embed    Float[]
+  content_embed   Unsupported("vector(2000)")?
 }
 
 model Movie {
@@ -32,6 +35,7 @@ model Movie {
   tmdbId          Int                @unique
   imdbId          String?                @unique
   preferences     UserPreference[]
+  recommendedTo   User[]     @relation("UserRecommendations")
 }
 
 model UserPreference {
@@ -53,3 +57,4 @@ model Genre {
   name   String
   users  UserPreference[] @relation("UserGenres")
 }
+

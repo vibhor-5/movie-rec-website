@@ -1,14 +1,14 @@
 .container {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%);
   display: flex;
   flex-direction: column;
 }
 
 .header {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(30, 41, 59, 0.8);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+  border-bottom: 1px solid var(--border);
   padding: 1rem 0;
 }
 
@@ -24,7 +24,7 @@
 .logo {
   font-size: 1.5rem;
   font-weight: bold;
-  color: white;
+  color: var(--text-primary);
   text-decoration: none;
 }
 
@@ -35,7 +35,7 @@
 }
 
 .progressText {
-  color: white;
+  color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 500;
 }
@@ -43,7 +43,7 @@
 .progressBar {
   width: 200px;
   height: 8px;
-  background: rgba(255, 255, 255, 0.2);
+  background: var(--surface);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -66,32 +66,33 @@
 }
 
 .stepContainer {
-  background: white;
+  background: var(--surface);
   border-radius: 1rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+  box-shadow: var(--shadow-lg);
   overflow: hidden;
   flex: 1;
   display: flex;
   flex-direction: column;
+  border: 1px solid var(--border);
 }
 
 .stepHeader {
   padding: 2rem;
   text-align: center;
-  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
-  border-bottom: 1px solid #e2e8f0;
+  background: var(--surface-light);
+  border-bottom: 1px solid var(--border);
 }
 
 .stepTitle {
   font-size: 2rem;
   font-weight: bold;
-  color: #1a202c;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
 }
 
 .stepSubtitle {
   font-size: 1.125rem;
-  color: #4a5568;
+  color: var(--text-secondary);
   max-width: 600px;
   margin: 0 auto;
 }
@@ -121,30 +122,31 @@
 .welcomeTitle {
   font-size: 2rem;
   font-weight: 700;
-  color: #1a202c;
+  color: var(--text-primary);
   margin-bottom: 1rem;
 }
 
 .welcomeDescription {
   font-size: 1.125rem;
-  color: #4a5568;
+  color: var(--text-secondary);
   margin-bottom: 2rem;
   line-height: 1.6;
 }
 
 .processCard {
-  background: #f7fafc;
+  background: var(--background);
   padding: 2rem;
   border-radius: 1rem;
   margin-bottom: 2rem;
   width: 100%;
   max-width: 500px;
+  border: 1px solid var(--border);
 }
 
 .processTitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #2d3748;
+  color: var(--text-primary);
   margin-bottom: 1rem;
 }
 
@@ -161,7 +163,7 @@
 }
 
 .processNumber {
-  background: #4299e1;
+  background: var(--primary);
   color: white;
   border-radius: 50%;
   width: 24px;
@@ -189,13 +191,13 @@
 .statNumber {
   font-size: 2rem;
   font-weight: 700;
-  color: #667eea;
+  color: var(--primary);
   margin-bottom: 0.5rem;
 }
 
 .statLabel {
   font-size: 0.875rem;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 /* Movie Rating Step Styles */
@@ -216,7 +218,7 @@
   left: 1rem;
   top: 50%;
   transform: translateY(-50%);
-  color: #9ca3af;
+  color: var(--text-muted);
   width: 1.25rem;
   height: 1.25rem;
 }
@@ -224,16 +226,18 @@
 .searchInput {
   width: 100%;
   padding: 0.75rem 1rem 0.75rem 3rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
   font-size: 1rem;
   transition: border-color 0.2s ease;
+  background-color: var(--surface);
+  color: var(--text-primary);
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #4299e1;
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .filterButtons {
@@ -244,38 +248,38 @@
 
 .filterButton {
   padding: 0.5rem 1rem;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border);
   border-radius: 2rem;
-  background: white;
-  color: #4a5568;
+  background: var(--surface);
+  color: var(--text-secondary);
   font-size: 0.875rem;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .filterButton:hover {
-  background: #f7fafc;
-  border-color: #cbd5e0;
+  background: var(--surface-light);
+  border-color: var(--border-light);
 }
 
 .filterButton.active {
-  background: #4299e1;
-  border-color: #4299e1;
+  background: var(--primary);
+  border-color: var(--primary);
   color: white;
 }
 
 .movieGrid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 1.5rem;
   margin-bottom: 2rem;
 }
 
 .movieCard {
-  background: white;
+  background: var(--surface-light);
   border-radius: 0.75rem;
   overflow: hidden;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: var(--shadow-md);
   transition: all 0.3s ease;
   cursor: pointer;
   border: 2px solid transparent;
@@ -283,12 +287,12 @@
 
 .movieCard:hover {
   transform: translateY(-4px);
-  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  box-shadow: var(--shadow-lg);
 }
 
 .movieCard.selected {
-  border-color: #4299e1;
-  box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.1);
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
 }
 
 .moviePosterContainer {
@@ -301,7 +305,7 @@
   width: 100%;
   height: 100%;
   object-fit: cover;
-  background: #f7fafc;
+  background: var(--background);
 }
 
 .movieOverlay {
@@ -337,7 +341,7 @@
 .movieTitle {
   font-size: 0.875rem;
   font-weight: 600;
-  color: #2d3748;
+  color: var(--text-primary);
   margin-bottom: 0.5rem;
   line-height: 1.2;
   display: -webkit-box;
@@ -355,13 +359,38 @@
 
 .movieYear {
   font-size: 0.75rem;
-  color: #718096;
+  color: var(--text-muted);
   font-weight: 500;
 }
 
 .movieGenres {
   font-size: 0.75rem;
-  color: #718096;
+  color: var(--text-muted);
+}
+
+.ratingSection {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.watchedCheckbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+
+.watchedCheckbox input[type="checkbox"] {
+  width: 1rem;
+  height: 1rem;
+  accent-color: var(--primary);
+}
+
+.watchedLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 500;
 }
 
 .ratingContainer {
@@ -374,8 +403,8 @@
   width: 1.25rem;
   height: 1.25rem;
   cursor: pointer;
-  transition: color 0.2s ease;
-  color: #e2e8f0;
+  transition: all 0.2s ease;
+  color: var(--border-light);
 }
 
 .star.filled {
@@ -384,6 +413,19 @@
 
 .star:hover {
   color: #fbbf24;
+  transform: scale(1.1);
+}
+
+.star.disabled {
+  cursor: not-allowed;
+  opacity: 0.3;
+}
+
+.ratingLabel {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  text-align: center;
+  margin-top: 0.25rem;
 }
 
 /* Completion Step Styles */
@@ -404,20 +446,20 @@
 .completionTitle {
   font-size: 2rem;
   font-weight: 700;
-  color: #1a202c;
+  color: var(--text-primary);
   margin-bottom: 1rem;
 }
 
 .completionDescription {
   font-size: 1.125rem;
-  color: #4a5568;
+  color: var(--text-secondary);
   margin-bottom: 2rem;
   line-height: 1.6;
 }
 
 .completionCard {
-  background: #f0fff4;
-  border: 1px solid #9ae6b4;
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
   padding: 2rem;
   border-radius: 1rem;
   margin-bottom: 2rem;
@@ -428,7 +470,7 @@
 .completionCardTitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #22543d;
+  color: var(--success);
   margin-bottom: 1rem;
 }
 
@@ -446,22 +488,23 @@
 }
 
 .checkmark {
-  color: #22c55e;
+  color: var(--success);
   font-weight: bold;
 }
 
 .algorithmPreview {
-  background: #f8fafc;
+  background: var(--background);
   padding: 2rem;
   border-radius: 1rem;
   width: 100%;
   max-width: 500px;
+  border: 1px solid var(--border);
 }
 
 .algorithmPreviewTitle {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #1a202c;
+  color: var(--text-primary);
   margin-bottom: 1.5rem;
 }
 
@@ -480,7 +523,7 @@
 .tasteLabel {
   font-size: 0.875rem;
   font-weight: 500;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .tasteGenres {
@@ -489,7 +532,7 @@
 }
 
 .tasteGenre {
-  background: #4299e1;
+  background: var(--primary);
   color: white;
   padding: 0.25rem 0.5rem;
   border-radius: 0.25rem;
@@ -499,7 +542,7 @@
 
 .tasteValue {
   font-weight: 600;
-  color: #1a202c;
+  color: var(--text-primary);
 }
 
 /* Actions */
@@ -508,17 +551,17 @@
   justify-content: space-between;
   align-items: center;
   padding: 2rem;
-  background: #f8fafc;
-  border-top: 1px solid #e2e8f0;
+  background: var(--background);
+  border-top: 1px solid var(--border);
 }
 
 .selectedCount {
   font-size: 0.875rem;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 .selectedCount.complete {
-  color: #22c55e;
+  color: var(--success);
   font-weight: 600;
 }
 
@@ -529,25 +572,25 @@
 
 .skipButton {
   padding: 0.75rem 1.5rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 0.5rem;
-  background: white;
-  color: #4a5568;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text-secondary);
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
 }
 
 .skipButton:hover {
-  background: #f7fafc;
-  border-color: #cbd5e0;
+  background: var(--surface-light);
+  border-color: var(--border-light);
 }
 
 .continueButton {
   padding: 0.75rem 2rem;
   border: none;
-  border-radius: 0.5rem;
-  background: #4299e1;
+  border-radius: var(--radius-md);
+  background: var(--primary);
   color: white;
   font-weight: 600;
   cursor: pointer;
@@ -558,11 +601,11 @@
 }
 
 .continueButton:hover:not(:disabled) {
-  background: #3182ce;
+  background: var(--primary-dark);
 }
 
 .continueButton:disabled {
-  background: #a0aec0;
+  background: var(--text-muted);
   cursor: not-allowed;
 }
 
@@ -581,13 +624,13 @@
 .emptyState {
   text-align: center;
   padding: 3rem;
-  color: #718096;
+  color: var(--text-muted);
 }
 
 .emptyState h3 {
   font-size: 1.25rem;
   margin-bottom: 0.5rem;
-  color: #4a5568;
+  color: var(--text-secondary);
 }
 
 /* Responsive Design */
@@ -613,7 +656,7 @@
   }
 
   .movieGrid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
     gap: 1rem;
   }
 

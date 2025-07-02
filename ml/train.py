@@ -26,8 +26,8 @@ mf_config={
 def main():
     model = MatrixFactorizationTrainer()
     model.build(mf_config)  
+    model.load("checkpoints/mf_ml32m.pth")
     model.train()
-    # model.load("/Users/vibhorkumar/Desktop/projs/project/ml/checkpoints/final_checkpoints/matrix_factorization_final_20250626_230836.pth")
     print(model.test())
     # Test prediction
     # item_ids = torch.tensor([7, 8, 9, 10])

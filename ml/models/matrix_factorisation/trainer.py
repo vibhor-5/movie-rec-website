@@ -109,7 +109,6 @@ class MatrixFactorizationTrainer(RecommenderModel):
         return batch_metrics
     
     def train(self) -> None:
-        # Initialize wandb
         wandb.init(project=self.config.get('wandb_project', 'mf_training'), config=self.config)
         train_loader = self.dataset.get_dataloader(self.train_data, batch_size=self.config.get('batch_size', 64))
         val_loader = self.dataset.get_dataloader(self.val_data, batch_size=self.config.get('batch_size', 64)) if self.val_data else None
@@ -207,8 +206,6 @@ class MatrixFactorizationTrainer(RecommenderModel):
         }
         
         if self.is_binary:
-            # For binary classification metrics
-            # Convert logits to probabilities using sigmoid
             probabilities = torch.sigmoid(all_predictions)
             
             # Convert probabilities to binary predictions using threshold
@@ -331,22 +328,13 @@ class MatrixFactorizationTrainer(RecommenderModel):
         return predictions[:20], predicted_ids[:20]
     
     def save(self, save_path: str) -> None:
-        """
-        Save the model to the specified path.
-        
-        Args:
-            save_path (str): Path to save the model.
-        """
         torch.save(self.model.state_dict(), save_path)
 
-    def load(self, load_path: str) -> None:
-        """
-        Load the model from the specified path.
-        
-        Args:
-            load_path (str): Path to load the model from.
-        """
+    def load(self, load_path: str,trainable:bool=False) -> None:
         self.model.load_state_dict(torch.load(load_path))
         self.model.to(self.device)
-        self.model.eval()
+        if not trainable:
+            self.model.eval()
+        else:
+            self.model.train()
         print(f"Model loaded from {load_path}")

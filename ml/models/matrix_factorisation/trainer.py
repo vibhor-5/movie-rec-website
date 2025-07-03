@@ -12,7 +12,7 @@ import torch.nn.functional as F
 import wandb
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-
+from predict_model import prediction_model
 
 class MatrixFactorizationTrainer(RecommenderModel):
 
@@ -20,7 +20,6 @@ class MatrixFactorizationTrainer(RecommenderModel):
         self.config=config
         self.model_name=config.get("model_name","mf_model")
         self.device=config.get("device","cpu")
-        
 
     def build(self,config:dict):
         self.config = config
@@ -224,7 +223,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
             y_prob = probabilities.numpy()
             
             # Print distribution for debugging
-            print(f"\nValidation Stats:")
+            print("\nValidation Stats:")
             print(f"Predicted 1s: {np.sum(y_pred == 1)} / {len(y_pred)} ({np.mean(y_pred)*100:.2f}%)")
             print(f"Actual 1s: {np.sum(y_true == 1)} / {len(y_true)} ({np.mean(y_true)*100:.2f}%)")
             print(f"Avg prediction probability: {np.mean(y_prob):.4f}")
@@ -295,44 +294,24 @@ class MatrixFactorizationTrainer(RecommenderModel):
             
         return test_metrics
     
-    def predict(self, item_ids: torch.Tensor, ratings: torch.Tensor ) -> tuple[torch.Tensor, torch.Tensor]:
+    def predict(self, item_ids: torch.Tensor, ratings: torch.Tensor,k:int =10 ) -> Tuple[torch.Tensor, torch.Tensor]:
         self.model.eval()
-
-        user_emb = nn.Parameter(torch.randn(self.latent_dim, device=self.device, requires_grad=True))
-        optimiser = torch.optim.Adam([user_emb], lr=0.01)
-
-        # Ensure item_ids and ratings are on the correct device
         item_ids = item_ids.to(self.device)
         ratings = ratings.to(self.device)
+        user_emb_model=prediction_model(self.latent_dim,device=self.device)
+        item_embs = self.model.item_embedding(item_ids).detach()
+        item_bias=self.model.item_bias(item_ids).detach()
+        user_emb=user_emb_model.train_model(item_embs,ratings,item_bias,loss_type="bce_logits",
+        num_epochs=15,pos_weight=self.pos_weight,l2_reg=0.002,lr=0.001)
 
-        item_embs = self.model.item_embedding(item_ids).detach()  # (N, D)
-
-        for epoch in range(100):
-            preds = (user_emb * item_embs).sum(dim=1)  # (N,)
-            
-            if self.is_binary:
-                # For binary classification, use BCE loss
-                preds_sigmoid = torch.sigmoid(preds)
-                loss = F.binary_cross_entropy(preds_sigmoid, ratings)
-            else:
-                # For regression, use MSE loss
-                loss = F.mse_loss(preds, ratings)
-                
-            loss.backward()
-            optimiser.step()
-            optimiser.zero_grad()
-
-        # Predict for all items
         all_item_embs = self.model.item_embedding.weight  # (num_items, D)
         predictions = torch.matmul(user_emb, all_item_embs.T)  # (num_items,)
         
         if self.is_binary:
-            # Convert logits to probabilities for binary classification
             predictions = torch.sigmoid(predictions)
-            
         predictions, predicted_ids = predictions.sort(descending=True)
 
-        return predictions[:20], predicted_ids[:20]
+        return predictions[:k], predicted_ids[:k]
     
     def save(self, save_path: str) -> None:
         torch.save(self.model.state_dict(), save_path)

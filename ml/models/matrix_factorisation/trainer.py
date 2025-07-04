@@ -12,14 +12,33 @@ import torch.nn.functional as F
 import wandb
 from tqdm import tqdm
 from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, roc_auc_score
-from predict_model import prediction_model
+from .predict_model import prediction_model
 
 class MatrixFactorizationTrainer(RecommenderModel):
 
-    def build(self,config:dict,trainable:bool=True):
+    def build_for_inference(self,config:dict):
+        self.config=config
+        self.model_name = config.get('model_name', 'matrix_factorization')
+        self.device= torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
+        self.latent_dim = config.get('embedding_dim', 64)
+        self.model = MatrixFactorizationModel(
+            num_users=config.get('num_users', 1000),  # Default value, can be overridden
+            num_items=config.get('num_items', 1000),  # Default value, can be overridden
+            embedding_dim=config.get('embedding_dim', 64),
+            dropout_rate=config.get('dropout_rate', 0.2)
+        ).to(self.device)
+        print(self.model)
+
+        self.loss_type = config.get('loss', 'bce_logits')
+        self.is_binary = config.get('binarize', True)
+        self.threshold = config.get('threshold', 0.5)
+        self.l2_reg = config.get('l2_reg', 0.01) 
+
+    def build(self,config:dict):
         self.config = config
         self.model_name = config.get('model_name', 'matrix_factorization')
         self.device= torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
+        self.latent_dim = config.get('embedding_dim', 64)
         self.dataset= DatasetLoader(
             path=config['data_path'],
             dataset_type=config.get('dataset_type', 'csv'),
@@ -28,40 +47,37 @@ class MatrixFactorizationTrainer(RecommenderModel):
             binarize=config.get('binarize', False),
             min_rating=config.get('min_rating', 1)
         )
-        
         self.uid_map = self.dataset._uid_map
         self.mid_map = self.dataset._mid_map
         self.num_users = self.dataset.num_users
         self.num_items = self.dataset.num_items
-        self.latent_dim = config.get('embedding_dim', 64)
+        self.train_data,self.val_data, self.test_data = self.dataset.split_data()
         self.model = MatrixFactorizationModel(
             num_users=self.num_users,
             num_items=self.num_items,
             embedding_dim=config.get('embedding_dim', 64),
             dropout_rate=config.get('dropout_rate', 0.2)
         ).to(self.device)
-
         print(self.model)
 
         self.loss_type = config.get('loss', 'bce_logits')
         self.is_binary = config.get('binarize', True)
         self.threshold = config.get('threshold', 0.5)
         self.l2_reg = config.get('l2_reg', 0.01)
+        
+        self.checkpoints_dir = config.get('checkpoints_dir', 'checkpoints') 
+        os.makedirs(self.checkpoints_dir, exist_ok=True)
         self.pos_weight = self._calculate_pos_weight()
         print(f"Calculated pos_weight: {self.pos_weight}")
-
-        if trainable:
-            self.checkpoints_dir = config.get('checkpoints_dir', 'checkpoints') 
-            os.makedirs(self.checkpoints_dir, exist_ok=True)
-            self.train_data,self.val_data, self.test_data = self.dataset.split_data()
-            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=config.get('learning_rate', 0.001))
-            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-                self.optimizer, mode='min', patience=5, factor=0.3
-            )
-            self.early_stopping_patience = config.get('early_stopping_patience', 10)
-            self.best_val_loss = float('inf')
-            self.patience_counter = 0
-            self.best_model_state = None
+        
+        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=config.get('learning_rate', 0.001))
+        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizer, mode='min', patience=5, factor=0.3
+        )
+        self.early_stopping_patience = config.get('early_stopping_patience', 10)
+        self.best_val_loss = float('inf')
+        self.patience_counter = 0
+        self.best_model_state = None
         
    
     def _calculate_pos_weight(self) -> float:
@@ -284,7 +300,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
             
         return test_metrics
     
-    def predict(self, item_ids: torch.Tensor, ratings: torch.Tensor,k:int =10 ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def predict(self, item_ids: torch.Tensor, ratings: torch.Tensor,k:int =10,pos_weight:float =1.0 ) -> Tuple[torch.Tensor, torch.Tensor]:
         
         self.model.eval()
         item_ids = item_ids.to(self.device)
@@ -296,7 +312,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
             item_bias=self.model.item_bias(item_ids).detach()
         
         user_emb=user_emb_model.train_model(item_embs,ratings,item_bias,loss_type="bce_logits",
-            num_epochs=15,pos_weight=self.pos_weight,l2_reg=0.002,lr=0.001)
+            num_epochs=15,pos_weight=pos_weight,l2_reg=0.002,lr=0.001)
         
         with torch.no_grad():
             all_item_embs = self.model.item_embedding.weight  # (num_items, D)
@@ -311,7 +327,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
         torch.save(self.model.state_dict(), save_path)
 
     def load(self, load_path: str,trainable:bool=False) -> None:
-        self.model.load_state_dict(torch.load(load_path))
+        self.model.load_state_dict(torch.load(load_path,map_location=self.device))
         self.model.to(self.device)
         if not trainable:
             self.model.eval()

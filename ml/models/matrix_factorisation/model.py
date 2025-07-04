@@ -73,19 +73,6 @@ class MatrixFactorizationModel(nn.Module):
         return predictions
     
     def loss(self, loss_type: str, predictions: torch.Tensor, targets: torch.Tensor, l2_reg: float = 0.01, pos_weight: float = 1.0) -> torch.Tensor:
-        """
-        Compute the loss between predictions and targets.
-
-        Args:
-            loss_type (str): Type of loss function to use.
-            predictions (torch.Tensor): Predicted scores.
-            targets (torch.Tensor): Ground truth scores.
-            l2_reg (float): L2 regularization strength.
-            pos_weight (float): Weight for positive class in BCE loss.
-
-        Returns:
-            torch.Tensor: Computed loss.
-        """
         
         if loss_type == 'bce_logits':
             # Use BCEWithLogitsLoss with pos_weight for class imbalance

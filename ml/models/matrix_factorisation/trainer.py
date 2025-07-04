@@ -16,12 +16,7 @@ from predict_model import prediction_model
 
 class MatrixFactorizationTrainer(RecommenderModel):
 
-    def model_build(self,config:dict):
-        self.config=config
-        self.model_name=config.get("model_name","mf_model")
-        self.device=config.get("device","cpu")
-
-    def build(self,config:dict):
+    def build(self,config:dict,trainable:bool=True):
         self.config = config
         self.model_name = config.get('model_name', 'matrix_factorization')
         self.device= torch.device('cuda' if torch.cuda.is_available() else 'mps' if torch.backends.mps.is_available() else 'cpu')
@@ -33,14 +28,11 @@ class MatrixFactorizationTrainer(RecommenderModel):
             binarize=config.get('binarize', False),
             min_rating=config.get('min_rating', 1)
         )
-        self.train_data,self.val_data, self.test_data = self.dataset.split_data()
-        self.uid_map = self.dataset.uid_map
-        self.mid_map = self.dataset.mid_map
+        
+        self.uid_map = self.dataset._uid_map
+        self.mid_map = self.dataset._mid_map
         self.num_users = self.dataset.num_users
         self.num_items = self.dataset.num_items
-        self.checkpoints_dir = config.get('checkpoints_dir', 'checkpoints') 
-        os.makedirs(self.checkpoints_dir, exist_ok=True)
-
         self.latent_dim = config.get('embedding_dim', 64)
         self.model = MatrixFactorizationModel(
             num_users=self.num_users,
@@ -51,27 +43,25 @@ class MatrixFactorizationTrainer(RecommenderModel):
 
         print(self.model)
 
-        self.l2_reg = config.get('l2_reg', 0.01)
-        self.optimizer = torch.optim.Adam(self.model.parameters(), lr=config.get('learning_rate', 0.001))
-        
-        # More conservative scheduler settings
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizer, mode='min', patience=5, factor=0.3
-        )
-        
         self.loss_type = config.get('loss', 'bce_logits')
         self.is_binary = config.get('binarize', True)
         self.threshold = config.get('threshold', 0.5)
-        
-        # Calculate class weights for imbalanced data
+        self.l2_reg = config.get('l2_reg', 0.01)
         self.pos_weight = self._calculate_pos_weight()
         print(f"Calculated pos_weight: {self.pos_weight}")
-        
-        # Early stopping parameters
-        self.early_stopping_patience = config.get('early_stopping_patience', 10)
-        self.best_val_loss = float('inf')
-        self.patience_counter = 0
-        self.best_model_state = None
+
+        if trainable:
+            self.checkpoints_dir = config.get('checkpoints_dir', 'checkpoints') 
+            os.makedirs(self.checkpoints_dir, exist_ok=True)
+            self.train_data,self.val_data, self.test_data = self.dataset.split_data()
+            self.optimizer = torch.optim.Adam(self.model.parameters(), lr=config.get('learning_rate', 0.001))
+            self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(
+                self.optimizer, mode='min', patience=5, factor=0.3
+            )
+            self.early_stopping_patience = config.get('early_stopping_patience', 10)
+            self.best_val_loss = float('inf')
+            self.patience_counter = 0
+            self.best_model_state = None
         
    
     def _calculate_pos_weight(self) -> float:
@@ -295,23 +285,27 @@ class MatrixFactorizationTrainer(RecommenderModel):
         return test_metrics
     
     def predict(self, item_ids: torch.Tensor, ratings: torch.Tensor,k:int =10 ) -> Tuple[torch.Tensor, torch.Tensor]:
+        
         self.model.eval()
         item_ids = item_ids.to(self.device)
         ratings = ratings.to(self.device)
         user_emb_model=prediction_model(self.latent_dim,device=self.device)
-        item_embs = self.model.item_embedding(item_ids).detach()
-        item_bias=self.model.item_bias(item_ids).detach()
-        user_emb=user_emb_model.train_model(item_embs,ratings,item_bias,loss_type="bce_logits",
-        num_epochs=15,pos_weight=self.pos_weight,l2_reg=0.002,lr=0.001)
-
-        all_item_embs = self.model.item_embedding.weight  # (num_items, D)
-        predictions = torch.matmul(user_emb, all_item_embs.T)  # (num_items,)
         
-        if self.is_binary:
-            predictions = torch.sigmoid(predictions)
-        predictions, predicted_ids = predictions.sort(descending=True)
+        with torch.no_grad():
+            item_embs = self.model.item_embedding(item_ids).detach()
+            item_bias=self.model.item_bias(item_ids).detach()
+        
+        user_emb=user_emb_model.train_model(item_embs,ratings,item_bias,loss_type="bce_logits",
+            num_epochs=15,pos_weight=self.pos_weight,l2_reg=0.002,lr=0.001)
+        
+        with torch.no_grad():
+            all_item_embs = self.model.item_embedding.weight  # (num_items, D)
+            predictions = torch.matmul(user_emb, all_item_embs.T)  # (num_items,)    
+            if self.is_binary:
+                predictions = torch.sigmoid(predictions)
+            predictions, predicted_ids = predictions.sort(descending=True)
 
-        return predictions[:k], predicted_ids[:k]
+        return predictions[:k].cpu(), predicted_ids[:k].cpu()
     
     def save(self, save_path: str) -> None:
         torch.save(self.model.state_dict(), save_path)

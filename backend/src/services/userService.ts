@@ -3,12 +3,10 @@ import { PrismaClient } from '../generated/prisma';
 
 const prisma = new PrismaClient();
 
-// Function to create a new user
-export async function createUser(name: string, email: string, rawPassword: string) {
-  // Hash the password before saving
-  const hashedPassword = await bcrypt.hash(rawPassword, 10);
 
-  // Create user with hashed password
+export async function createUser(name: string, email: string, rawPassword: string) {
+ 
+  const hashedPassword = await bcrypt.hash(rawPassword, 10);
   const user = await prisma.user.create({
     data: {
       name,

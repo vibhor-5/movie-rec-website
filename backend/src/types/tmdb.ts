@@ -20,22 +20,20 @@ export interface Movie {
     title?: string;
     name?: string;
     genre_ids?: number[];
-    release_date?: string;
-    genres?: { id: number; name: string }[];
-    poster_path?: string;
+    release_date?: Date;
+    genre?:string[];
+    posterUrl?: string;
     overview?: string;
     vote_average?: number;
 }
 
 export interface TransformedMovie {
-    id: number;
     title: string;
-    posterPath: string | null;
-    releaseDate: string;
+    posterUrl: string | null;
+    releaseDate: Date;
     voteAverage: number;
-    genres: string[];
+    genre: string[];
     overview: string;
-    imdbId: string | null;
     tmdbId: number;
     year: number | null;
 }

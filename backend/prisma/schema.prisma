@@ -12,6 +12,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  shadowDatabaseUrl= env("SHADOW_DATABASE_URL") 
 }
 
 model User {
@@ -33,7 +34,9 @@ model Movie {
   year            Int?
   posterUrl       String?
   tmdbId          Int                @unique
-  imdbId          String?                @unique
+  voteAverage     Float
+  overview        String
+  releaseDate     DateTime?
   preferences     UserPreference[]
   recommendedTo   User[]     @relation("UserRecommendations")
 }
@@ -42,7 +45,7 @@ model UserPreference {
   id              Int                @id @default(autoincrement())
   user            User              @relation(fields: [userId], references: [id])
   userId          String
-  movie           Movie             @relation(fields: [movieId], references: [id])
+  movie           Movie             @relation(fields: [movieId], references: [tmdbId])
   movieId         Int
   rating          Int
   genres          Genre[]            @relation("UserGenres")

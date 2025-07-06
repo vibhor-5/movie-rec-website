@@ -1,15 +1,15 @@
 import express from 'express';
 import { PrismaClient } from '../generated/prisma';
 import { authenticateToken } from '../middleware/auth';
-import { savePreference, searchAny, genreMovieList, getPopularList, SimilarList } from '../controllers/onboardController';
+import { savePreference, search, genreMovieList, getPopularList, SimilarList } from '../controllers/onboardController';
 import { Request, Response } from 'express';
-import { searchMulti } from '../utils/tmdb';
+
 
 const app = express.Router();
 const prisma = new PrismaClient();
 
 app.post('/user/preferences', authenticateToken, savePreference);
-app.get('/search', searchAny);
+app.get('/search', search);
 app.get('/api/genre', genreMovieList); //send the genre in Sentencecase
 app.get('/api/popular', getPopularList);//send page number
 app.get('/api/similar', SimilarList);//send tmdbId

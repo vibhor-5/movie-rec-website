@@ -43,49 +43,27 @@ export async function safeGet<T>(url: string, options = {}, retries = 3): Promis
     throw new Error('Max retries exceeded (ECONNRESET)');
 }
 
-export const transformMovie = (limit: (fn: () => Promise<any>) => Promise<any>) =>
-    async (m: TMDBResult): Promise<TransformedMovie> => {
-        return limit(async () => {
-            let imdbId: string | null = null;
-            try {
-                console.log("fetching imdbids")
-                const imdbRes = await safeGet<ExternalIDsResponse>(
-                    `/movie/${m.id}/external_ids`
-                );
-                imdbId = imdbRes.imdb_id || null;
-            } catch (error) {
-                const err = error as { response?: { data: any }; message: string };
-                console.warn(
-                    `Failed to fetch IMDB ID for movie ${m.id}:`,
-                    err.response?.data || err.message
-                );
-            }
-
+export const transformMovie = async (m: TMDBResult) => {
             return {
-                id: m.id,
                 tmdbId: m.id,
                 title: m.title || m.name || 'Unknown Title',
-                genres: m.genres ? m.genres.map((g) => g.name) : [],
+                genre: m.genres ? m.genres.map((g) => g.name) : [],
                 year: m.release_date ? parseInt(m.release_date.split('-')[0]) : null,
-                releaseDate: m.release_date || '',
-                posterPath: m.poster_path
+                releaseDate: new Date(m.release_date as any) || '',
+                posterUrl: m.poster_path
                     ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
                     : null,
                 overview: m.overview || '',
                 voteAverage: m.vote_average || 0,
-                imdbId,
             };
-        });
-    };
+    }
 
-const limitedTransform = transformMovie(limit);
-
-export const searchMulti = async (query: string, page = 1) => {
+export const searchMovie = async (query: string, page = 1) => {
     try {
-        const res = await safeGet<{ results: TMDBResult[] }>('/search/multi', {
+        const res = await safeGet<{ results: TMDBResult[] }>('/search/movie', {
             params: { query, page },
         });
-        const tasks = res.results.map(limitedTransform);
+        const tasks = res.results.map(transformMovie);
         const results = await Promise.all(tasks);
         return results;
     } catch (error) {
@@ -99,19 +77,11 @@ export const getMovieDetails = async (tmdbId: number): Promise<TransformedMovie>
     try {
         const res = await safeGet<TMDBResult>(`/movie/${tmdbId}`);
         const m = res;
-        const imdbRes = await safeGet<ExternalIDsResponse>(`/movie/${tmdbId}/external_ids`);
-        return {
-            id: m.id,
-            tmdbId: m.id,
-            title: m.title || 'Unknown Title',
-            year: m.release_date ? parseInt(m.release_date.split('-')[0]) : null,
-            releaseDate: m.release_date || '',
-            genres: m.genres?.map((g: any) => g.name) || [],
-            posterPath: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
-            overview: m.overview || '',
-            voteAverage: m.vote_average || 0,
-            imdbId: imdbRes.imdb_id || null,
-        };
+        if (!m) {
+            throw new Error(`Movie with TMDB ID ${tmdbId} not found`);
+        }
+        const result = await transformMovie(m);
+        return result;
     } catch (error) {
         const err = error as { response?: { data: any }; message: string };
         console.error(`Failed to get movie details for TMDB ID ${tmdbId}:`, err.response?.data || err.message);
@@ -127,8 +97,7 @@ export const getGenreMovies = async (genre: String, page = 1) => {
                 page
             }
         });
-        console.log("transforming movies");
-        const tasks = res.results.map(limitedTransform);
+        const tasks = res.results.map(transformMovie);
         const results = await Promise.all(tasks);
         return results;
     } catch (error) {
@@ -145,20 +114,7 @@ export const getPopularMovies = async (page: number) => {
                 page,
             }
         });// This transformation should only include the direct mapping of fields available in the popular movies endpoint, without fetching external IDs.
-        const tasks = res.results.map(async (m) => {
-            return {
-                id: m.id,
-                tmdbId: m.id,
-                title: m.title || m.name || 'Unknown Title',
-                genres: m.genre_ids ? m.genre_ids.map(id => id.toString()) : [], // Note: popular movies endpoint returns genre_ids, not full genre objects
-                year: m.release_date ? parseInt(m.release_date.split('-')[0]) : null,
-                releaseDate: m.release_date || '',
-                posterPath: m.poster_path ? `https://image.tmdb.org/t/p/w500${m.poster_path}` : null,
-                overview: m.overview || '',
-                voteAverage: m.vote_average || 0,
-                imdbId: null, // IMDB ID is not available in the popular movies endpoint
-            };
-        });
+        const tasks = res.results.map(transformMovie);
         const results = await Promise.all(tasks);
         return results;
     } catch (error) {
@@ -175,7 +131,7 @@ export const getSimilar = async (tmdbid: number) => {
             console.error("TMDb response missing 'results':", res);
             return [];
         }
-        const tasks = res.results.map(limitedTransform);
+        const tasks = res.results.map(transformMovie);
         const result = await Promise.all(tasks);
         return result;
     } catch (error) {

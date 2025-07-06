@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { getMovieDetails, searchMulti, getGenreMovies, getPopularMovies, getSimilar } from '../utils/tmdb';
+import { getMovieDetails, searchMovie, getGenreMovies, getPopularMovies, getSimilar } from '../utils/tmdb';
 import { PrismaClient } from '../generated/prisma';
 
 const prisma = new PrismaClient();
@@ -130,7 +130,7 @@ export const savePreference = async (req: Request, res: Response): Promise<void>
     }
 };
 
-export const searchAny = async (req: Request, res: Response): Promise<void> => {
+export const search= async (req: Request, res: Response): Promise<void> => {
     try {
         const query = req.query.query;
 
@@ -139,7 +139,7 @@ export const searchAny = async (req: Request, res: Response): Promise<void> => {
             return;
         }
 
-        const results = await searchMulti(String(query));
+        const results = await searchMovie(String(query));
         res.json(results);
     } catch (error) {
         console.error('Search error:', error);

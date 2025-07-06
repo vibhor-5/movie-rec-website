@@ -8,46 +8,125 @@ export const savePreference = async (req: Request, res: Response): Promise<void>
     try {
         const userId = (req as Request & { user: { id: string } }).user.id;
         const preferences = req.body; // [{ tmdbId, rating, seen, imdbid }]
+        
         if (!Array.isArray(preferences)) {
             res.status(400).json({ error: 'Preferences must be an array' });
             return;
         }
+
+        // Validate that the user exists in the database
+        const existingUser = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!existingUser) {
+            res.status(401).json({ error: 'User not found. Please log in again.' });
+            return;
+        }
+
+        const successfulPreferences: any[] = [];
+        const failedPreferences: any[] = [];
+
         for (const pref of preferences) {
             if (!pref.tmdbId) {
                 console.warn('Skipping preference without tmdbId:', pref);
+                failedPreferences.push({
+                    tmdbId: pref.tmdbId,
+                    reason: 'Missing tmdbId'
+                });
                 continue;
             }
 
-            let movie = await prisma.movie.findUnique({ where: { tmdbId: pref.tmdbId } });
+            let movie = null;
 
-            // Cache if not present
-            if (!movie) {
-                try {
-                    const data = await getMovieDetails(pref.tmdbId);
-                    movie = await prisma.movie.create({ data });
-                } catch (error) {
-                    console.error(`Failed to fetch movie details for ${pref.tmdbId}:`, error);
-                    continue; // Skip this preference if we can't get movie details
+            try {
+                // First, try to find the movie in the database
+                movie = await prisma.movie.findUnique({ 
+                    where: { tmdbId: pref.tmdbId } 
+                });
+
+                // If not found, try to fetch from TMDB and create it
+                if (!movie) {
+                    try {
+                        const movieData = await getMovieDetails(pref.tmdbId);
+                        movie = await prisma.movie.create({ data: movieData });
+                        console.log(`Successfully created movie with tmdbId: ${pref.tmdbId}`);
+                    } catch (tmdbError) {
+                        console.error(`Failed to fetch/create movie details for tmdbId ${pref.tmdbId}:`, tmdbError);
+                        failedPreferences.push({
+                            tmdbId: pref.tmdbId,
+                            reason: 'Failed to fetch movie details from TMDB'
+                        });
+                        continue; // Skip this preference
+                    }
                 }
-            }
 
-            // Save preference
-            await prisma.userPreference.upsert({
-                where: { userId_movieId: { userId, movieId: movie.id } },
-                update: { rating: pref.rating, seen: pref.seen },
-                create: {
-                    userId,
+                // Double-check that movie is valid before proceeding
+                if (!movie || !movie.id) {
+                    console.error(`Movie object is invalid for tmdbId ${pref.tmdbId}:`, movie);
+                    failedPreferences.push({
+                        tmdbId: pref.tmdbId,
+                        reason: 'Invalid movie object after creation/retrieval'
+                    });
+                    continue;
+                }
+
+                // Save preference with validated movie and user
+                await prisma.userPreference.upsert({
+                    where: { userId_movieId: { userId, movieId: movie.id } },
+                    update: { 
+                        rating: pref.rating, 
+                        seen: pref.seen 
+                    },
+                    create: {
+                        userId,
+                        movieId: movie.id,
+                        rating: pref.rating,
+                        seen: pref.seen,
+                    },
+                });
+
+                successfulPreferences.push({
+                    tmdbId: pref.tmdbId,
                     movieId: movie.id,
                     rating: pref.rating,
-                    seen: pref.seen,
-                },
-            });
+                    seen: pref.seen
+                });
+
+            } catch (error) {
+                console.error(`Error processing preference for tmdbId ${pref.tmdbId}:`, error);
+                failedPreferences.push({
+                    tmdbId: pref.tmdbId,
+                    reason: error instanceof Error ? error.message : 'Unknown error'
+                });
+                continue;
+            }
         }
 
-        res.status(200).json({ message: 'Preferences saved with TMDb data.' });
+        // Return detailed response about successes and failures
+        const response = {
+            message: `Processed ${preferences.length} preferences`,
+            successful: successfulPreferences.length,
+            failed: failedPreferences.length,
+            successfulPreferences,
+            ...(failedPreferences.length > 0 && { failedPreferences })
+        };
+
+        if (successfulPreferences.length === 0) {
+            res.status(400).json({
+                ...response,
+                error: 'No preferences were successfully saved'
+            });
+        } else {
+            res.status(200).json(response);
+        }
+
     } catch (error) {
         console.error('Error saving preferences:', error);
-        res.status(500).json({ error: 'Failed to save preferences' });
+        res.status(500).json({ 
+            error: 'Failed to save preferences',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
     }
 };
 
@@ -92,6 +171,7 @@ export const genreMovieList = async (req: Request, res: Response): Promise<void>
         }
         if (!dbgenre) {
             res.status(404).json({ error: "genre unavailable" });
+            return;
         }
         console.log("getting movies");
         const result = await getGenreMovies(String(dbgenre?.id));

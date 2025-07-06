@@ -73,14 +73,14 @@ export const savePreference = async (req: Request, res: Response): Promise<void>
 
                 // Save preference with validated movie and user
                 await prisma.userPreference.upsert({
-                    where: { userId_movieId: { userId, movieId: movie.id } },
+                    where: { userId_movieId: { userId, movieId: movie.tmdbId } },
                     update: { 
                         rating: pref.rating, 
                         seen: pref.seen 
                     },
                     create: {
                         userId,
-                        movieId: movie.id,
+                        movieId: movie.tmdbId,
                         rating: pref.rating,
                         seen: pref.seen,
                     },

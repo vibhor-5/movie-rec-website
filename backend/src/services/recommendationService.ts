@@ -13,21 +13,23 @@ const recEngApi = axios.create({
 
 export async function getRecommendations(userId: string, limit: number = 10) {
   try {
-    const preference = await prismaClient.userPreference.findMany({
+    const preferences = await prismaClient.userPreference.findMany({
       where: {userId},
       select: {movieId: true,
         rating: true},
       });
-    if (preference.length === 0) {
+    if (preferences.length === 0) {
       throw new Error('No preferences found for the user');
     }
-    const movie_ids = preference.map(p => p.movieId);
-    const ratings = preference.map(p => p.rating);
-    const preferences ={movie_ids, ratings};
-    const response = await recEngApi.post('/recommend', {
-        preferences,
-        k:limit
-    });
+    const movie_ids = preferences.map(p => p.movieId);
+    const ratings = preferences.map(p => p.rating);
+
+    const requestBody = { movie_ids, ratings };
+
+    console.log(`Sending to recommendation service:`, requestBody);
+
+    // call the recommender service
+    const response = await recEngApi.post(`/recommend?k=${limit}`, requestBody);
     return response.data;
 }catch(error) {
     console.error('Error fetching user preferences:', error);

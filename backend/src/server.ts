@@ -16,7 +16,7 @@ app.use(express.urlencoded({ extended: true }))
 
 app.use('/api/auth', authRoutes);
 app.use("/", onboardingRoutes);
-app.use("api/",recRoutes);
+app.use("/api/",recRoutes);
 
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {

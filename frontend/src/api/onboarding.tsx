@@ -31,4 +31,55 @@ export const userPreferences = async (token:any , preferences:any ) => {
         console.error('Error saving user preferences:', error);
         throw error;
     }
+};
+
+export const searchMovies = async (query: string) => {
+    try {
+        const response = await api.get('/search', {
+            params: { query }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error searching movies:', error);
+        throw error;
+    }
+};
+
+export const getGenreMovies = async (genre: string, page: number = 1) => {
+    try {
+        const response = await api.get('/api/genre', {
+            params: { genre, page }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching genre movies:', error);
+        throw error;
+    }
+};
+
+export const getPopularMovies = async (page: number = 1) => {
+    try {
+        const response = await api.get('/api/popular', {
+            params: { page }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching popular movies:', error);
+        throw error;
+    }
+};
+
+export const getSimilarMovies = async (tmdbId: number) => {
+    try {
+        const response = await api.get('/api/similar', {
+            params: { tmdbId }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching similar movies:', error);
+        throw error;
+    }
+};
+};
+
 

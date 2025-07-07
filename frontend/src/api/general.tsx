@@ -1,26 +1,33 @@
 import axios from 'axios';
 
 interface Movie {
-  id: number;
+  tmdbId: number;
   title: string;
-  posterPath: string | null;
+  posterUrl: string | null;
   releaseDate: string;
-  genres: string[];
+  genre: string[];
   overview: string;
   voteAverage: number;
-  imdbId: string | null;
-  tmdbId: number;
   year: number | null;
 }
 
 
-const baseURL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3000/';
+const baseURL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3000';
 const api = axios.create({
     baseURL: baseURL,
     headers: {
         "Content-Type": "application/json",
     },
     timeout: 5000,
+});
+
+// Add request interceptor to include auth token
+api.interceptors.request.use((config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
 });
 
 export const searchMovies = async (query:any) => {  

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { ChevronRight, Film, BookOpen, Heart } from 'lucide-react';
 import { useAuthContext } from '../../contexts/AuthContext';
+import { getRecommendations } from '../../api/recommendations';
 import MovieCarousel from '../../components/common/MovieCarousel/MovieCarousel';
 import MovieOverlay from '../../components/common/MovieOverlay/MovieOverlay';
-import RecommendationSection from '../../components/dashboard/RecommendationSection/RecommendationSection';
 import LoadingSpinner from '../../components/common/LoadingSpinner/LoadingSpinner';
 import styles from './Home.module.css';
 import { getPopularMovies } from '../../api/general';
@@ -23,32 +23,20 @@ interface Movie {
 }
 
 const Home: React.FC = () => {
-  
   const { isAuthenticated } = useAuthContext();
   const [isLoading, setIsLoading] = useState(true);
   const [featuredMovies, setFeaturedMovies] = useState<Movie[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
-  const [recommendations, setRecommendations] = useState({
-    collaborativeMovies: [] as Movie[],
-    contentBasedMovies: [] as Movie[],
-    hybridMovies: [] as Movie[],
-    trendingMovies: [] as Movie[]
-  });
+  const [personalizedRecommendations, setPersonalizedRecommendations] = useState<Movie[]>([]);
+  const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
 
   useEffect(() => {
-
     const fetchData = async () => {
       setIsLoading(true);
       try {
         const mockMovies: Movie[] = await getPopularMovies(1);
         setFeaturedMovies(mockMovies);
-        setRecommendations({
-          collaborativeMovies: mockMovies,
-          contentBasedMovies: mockMovies,
-          hybridMovies: mockMovies,
-          trendingMovies: mockMovies
-        });
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -58,6 +46,39 @@ const Home: React.FC = () => {
 
     fetchData();
   }, []);
+
+  useEffect(() => {
+    const fetchPersonalizedRecommendations = async () => {
+      if (!isAuthenticated) return;
+
+      setIsLoadingRecommendations(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (token) {
+          const response = await getRecommendations(token, 10);
+          const transformedRecs = response.data.recommendations.map(movie => ({
+            id: movie.tmdbId,
+            title: movie.title,
+            posterPath: movie.posterUrl,
+            releaseDate: movie.releaseDate || '',
+            genres: movie.genre,
+            overview: movie.overview,
+            voteAverage: movie.voteAverage,
+            imdbId: null,
+            tmdbId: movie.tmdbId,
+            year: movie.year
+          }));
+          setPersonalizedRecommendations(transformedRecs);
+        }
+      } catch (error) {
+        console.error('Error fetching personalized recommendations:', error);
+      } finally {
+        setIsLoadingRecommendations(false);
+      }
+    };
+
+    fetchPersonalizedRecommendations();
+  }, [isAuthenticated]);
 
   const handleMovieSelect = (movie: Movie) => {
     setSelectedMovie(movie);
@@ -70,21 +91,15 @@ const Home: React.FC = () => {
   };
 
   const handleAddToWatchlist = (movie: Movie) => {
-    // TODO: Implement add to watchlist functionality
     console.log('Added to watchlist:', movie.title);
-    // You could show a toast notification here
   };
 
   const handleMarkAsWatched = (movie: Movie) => {
-    // TODO: Implement mark as watched functionality
     console.log('Marked as watched:', movie.title);
-    // You could show a toast notification here
   };
 
   const handleRateMovie = (movie: Movie, rating: number) => {
-    // TODO: Implement rating functionality
     console.log('Rated movie:', movie.title, 'Rating:', rating);
-    // You could show a toast notification here
   };
 
   if (isLoading) {
@@ -205,13 +220,24 @@ const Home: React.FC = () => {
           />
         </section>
 
-        <RecommendationSection
-          collaborativeMovies={recommendations.collaborativeMovies}
-          contentBasedMovies={recommendations.contentBasedMovies}
-          hybridMovies={recommendations.hybridMovies}
-          trendingMovies={recommendations.trendingMovies}
-          onMovieSelect={handleMovieSelect}
-        />
+        {personalizedRecommendations.length > 0 && (
+          <section className={styles.hero}>
+            <MovieCarousel
+              title="Recommended for You"
+              movies={personalizedRecommendations}
+              isLoading={isLoadingRecommendations}
+              onMovieClick={handleMovieSelect}
+            />
+          </section>
+        )}
+
+        <section className={styles.hero}>
+          <MovieCarousel
+            title="Popular Movies"
+            movies={featuredMovies}
+            onMovieClick={handleMovieSelect}
+          />
+        </section>
       </main>
 
       {/* Movie Overlay Modal */}

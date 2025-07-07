@@ -1,7 +1,7 @@
 import {PrismaClient} from '../generated/prisma';
 import axios from 'axios';
 
-const REC_ENG_URL= process.env.REC_ENG_URL || 'http://localhost:3000/';
+const REC_ENG_URL= process.env.REC_ENG_URL || 'http://localhost:8000/';
 const prismaClient = new PrismaClient();
 
 const recEngApi = axios.create({
@@ -30,9 +30,55 @@ export async function getRecommendations(userId: string, limit: number = 10) {
 
     // call the recommender service
     const response = await recEngApi.post(`/recommend?k=${limit}`, requestBody);
-    return response.data;
-}catch(error) {
-    console.error('Error fetching user preferences:', error);
-    throw new Error('Failed to fetch user preferences');
+    
+    // Extract user embedding from response
+    const { recommendations, recommendation_scores, user_embedding } = response.data;
+    
+    // Save user embedding to database
+    if (user_embedding && user_embedding.length > 0) {
+      await prismaClient.user.update({
+        where: { id: userId },
+        data: { collab_embed: user_embedding }
+      });
+      console.log(`Updated user ${userId} with collaborative embedding`);
     }
-};
+    
+    // Fetch movie details for recommendations
+    const movieDetails = await prismaClient.movie.findMany({
+      where: {
+        tmdbId: { in: recommendations }
+      },
+      select: {
+        id: true,
+        tmdbId: true,
+        title: true,
+        genre: true,
+        year: true,
+        posterUrl: true,
+        voteAverage: true,
+        overview: true,
+        releaseDate: true
+      }
+    });
+    
+    // Map recommendations with scores and preserve order
+    const recommendationsWithDetails = recommendations.map((tmdbId: number, index: number) => {
+      const movie = movieDetails.find(m => m.tmdbId === tmdbId);
+      return {
+        ...movie,
+        score: recommendation_scores[index],
+        rank: index + 1
+      };
+    }).filter(Boolean); // Remove any null entries
+    
+    return {
+      recommendations: recommendationsWithDetails,
+      user_embedding,
+      total_count: recommendationsWithDetails.length
+    };
+    
+  } catch(error) {
+    console.error('Error fetching recommendations:', error);
+    throw new Error('Failed to fetch recommendations');
+  }
+}

@@ -45,11 +45,12 @@ app = FastAPI(lifespan=lifespan)
 @app.post("/recommend")
 async def recommendation(pref:preferences,k:int=10):
     movie_ids=[id_dict[x] for x in pref.movie_ids]
-    recommendation_scores,recommendations=predictor_model.predict(movie_ids,pref.ratings,k)
+    recommendation_scores,recommendations,user_embedding=predictor_model.predict(movie_ids,pref.ratings,k)
     recommendations=[id_dict_rev[x] for x in recommendations]
     return {
     "recommendation_scores": recommendation_scores,
-    "recommendations": recommendations
+    "recommendations": recommendations,
+    "user_embedding": user_embedding
 }
 
 @app.get("/health")

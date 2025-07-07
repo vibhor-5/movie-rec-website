@@ -21,7 +21,11 @@ api.interceptors.request.use((config) => {
 
 export const userPreferences = async (token:any , preferences:any ) => {
     try {
-        const response = await api.post('/user/preferences', preferences);
+        const response = await api.post('/user/preferences', preferences, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
         return response.data;
     } catch (error) {
         console.error('Error saving user preferences:', error);

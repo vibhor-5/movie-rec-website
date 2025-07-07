@@ -5,6 +5,7 @@ import polars as pl
 from pydantic import BaseModel
 import json
 from fastapi.responses import JSONResponse
+from fastapi import HTTPException
 
 class preferences(BaseModel):
     movie_ids:list[int]
@@ -29,7 +30,7 @@ with open("/Users/vibhorkumar/Desktop/projs/project/ml/api/app/model_checkpoints
         metadata=json.load(f)
 links=pl.read_csv("/Users/vibhorkumar/Desktop/projs/project/ml/api/app/data/links.csv")
 id_dict=dict(zip(links["tmdbId"].to_list(),links["movieId"].to_list()))
-id_dict_rev=dict(zip(links["movieId"].to_list(),links["tmdbId"].to_list()))
+id_dict_rev={v:k for k, v in id_dict.items()}
 predictor_model=predictor()
 pos_weight=1.0
 
@@ -43,15 +44,33 @@ async def lifespan(app:FastAPI):
 app = FastAPI(lifespan=lifespan)
 
 @app.post("/recommend")
-async def recommendation(pref:preferences,k:int=10):
-    movie_ids=[id_dict[x] for x in pref.movie_ids]
-    recommendation_scores,recommendations,user_embedding=predictor_model.predict(movie_ids,pref.ratings,k)
-    recommendations=[id_dict_rev[x] for x in recommendations]
+async def recommendation(pref: preferences, k: int = 10):
+    valid_movie_ids = []
+    valid_ratings = []
+    missing_ids = []
+    for x, r in zip(pref.movie_ids, pref.ratings):
+        if x in id_dict:
+            valid_movie_ids.append(id_dict[x])
+            valid_ratings.append(r)
+        else:
+            missing_ids.append(x)
+
+    if not valid_movie_ids:
+        raise HTTPException(
+            status_code=400,
+            detail=f"No valid TMDB IDs found. Missing: {missing_ids}"
+        )
+
+    recommendation_scores, recommendations = predictor_model.predict(valid_movie_ids, valid_ratings, k)
+    recommendations = [
+    id_dict_rev.get(x, f"unknown_{x}") for x in recommendations
+]
+
     return {
-    "recommendation_scores": recommendation_scores,
-    "recommendations": recommendations,
-    "user_embedding": user_embedding
-}
+        "recommendation_scores": recommendation_scores,
+        "recommendations": recommendations,
+        "skipped_tmdb_ids": missing_ids
+    }
 
 @app.get("/health")
 async def health_check():

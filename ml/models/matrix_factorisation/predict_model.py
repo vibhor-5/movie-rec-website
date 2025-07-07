@@ -1,6 +1,5 @@
 import torch 
 import torch.nn as nn
-import torch.nn.functional as F
 
 class prediction_model(nn.Module):
     def __init__(self,emb_size:int,device):
@@ -9,14 +8,17 @@ class prediction_model(nn.Module):
         nn.init.normal_(self.user_emb,0,0.05)
         self.bias=nn.Parameter(torch.zeros(1,device=device))
 
-        self.user_bn=nn.BatchNorm1d(emb_size,device=device)
-        self.item_bn=nn.BatchNorm1d(emb_size,device=device)
+        self.user_bn=nn.LayerNorm(emb_size,device=device)
+        self.item_bn=nn.LayerNorm(emb_size,device=device)
     
     def forward(self,item_emb,item_bias):
         user_emb=self.user_bn(self.user_emb)
         item_emb=self.item_bn(item_emb)
+        user_emb = user_emb.expand(item_emb.size(0), -1)
+        item_bias = item_bias.view(-1) 
+        print(f"user_emb: {user_emb.shape}, item_emb: {item_emb.shape}")
         preds=(user_emb*item_emb).sum(dim=1)+self.bias+item_bias
-
+        print(f"preds: {preds.shape}")
         return preds
 
     def loss(self,predictions:torch.Tensor,target:torch.Tensor,
@@ -56,7 +58,7 @@ class prediction_model(nn.Module):
     pos_weight:float,
     l2_reg:float=0.002,
     lr:float=0.001):
-        optimiser=torch.optim.AdamW([self.user_emb],lr=lr)
+        optimiser=torch.optim.AdamW(self.parameters(),lr=lr)
         for epoch in range(num_epochs):
             optimiser.zero_grad()
             self.train()

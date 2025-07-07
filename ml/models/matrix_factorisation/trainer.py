@@ -320,6 +320,8 @@ class MatrixFactorizationTrainer(RecommenderModel):
             if self.is_binary:
                 predictions = torch.sigmoid(predictions)
             predictions, predicted_ids = predictions.sort(descending=True)
+        predictions=predictions.view(-1)
+        predicted_ids=predicted_ids.view(-1)
 
         return predictions[:k].cpu(), predicted_ids[:k].cpu()
     

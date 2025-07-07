@@ -1,6 +1,6 @@
-# MovieRec: Educational Movie Recommendation Platform
+# Multi Recsys Movie Recommendation
 
-MovieRec is a full-stack educational movie recommendation platform. It helps users discover new films and learn how recommendation algorithms work, combining collaborative filtering, content-based filtering, and hybrid approaches. The platform features a modern UI, robust backend, and extensible ML modules.
+MovieRec(tentative) is a full-stack educational movie recommendation platform. It helps users discover new films and learn how recommendation algorithms work, combining collaborative filtering, content-based filtering, and hybrid approaches. The platform features a modern UI, robust backend, and extensible ML modules.
 
 ---
 

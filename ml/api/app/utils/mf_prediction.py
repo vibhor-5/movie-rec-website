@@ -17,7 +17,5 @@ class predictor:
         movie_ids=[self.mid_map[x] for x in movie_ids]
         movie_ids = torch.tensor(movie_ids, dtype=torch.long)
         ratings = torch.tensor(ratings, dtype=torch.float32)
-        recommendation_scores,recommendations=self.trainer.predict(movie_ids,ratings,k,self.pos_weight)
-        return recommendation_scores.tolist(),recommendations.tolist()
-
-
+        recommendation_scores,recommendations,user_embedding=self.trainer.predict(movie_ids,ratings,k,self.pos_weight)
+        return recommendation_scores.tolist(),recommendations.tolist(),user_embedding.tolist()

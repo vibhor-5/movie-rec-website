@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Film, Clock, Star, Info, RefreshCw } from 'lucide-react';
 import { useAuthContext } from '../contexts/AuthContext';
-import { getRecommendations } from '../api/recommendations';
+import { getRecommendations, getTFIDFRecommendations } from '../api/recommendations';
 import MovieCarousel from '../components/common/MovieCarousel/MovieCarousel';
 import LoadingSpinner from '../components/common/LoadingSpinner/LoadingSpinner';
 import styles from './DashboardPage.module.css';
@@ -18,6 +18,7 @@ interface Movie {
   releaseDate: string | null;
   score: number;
   rank: number;
+  algorithm?: string;
 }
 
 const DashboardPage: React.FC = () => {
@@ -25,15 +26,18 @@ const DashboardPage: React.FC = () => {
   const [showAlgorithmDetails, setShowAlgorithmDetails] = useState(false);
   const [selectedAlgorithm, setSelectedAlgorithm] = useState('collaborative');
   const [recommendations, setRecommendations] = useState<Movie[]>([]);
+  const [tfidfRecommendations, setTfidfRecommendations] = useState<Movie[]>([]);
   const [isLoadingRecommendations, setIsLoadingRecommendations] = useState(false);
+  const [isLoadingTFIDF, setIsLoadingTFIDF] = useState(false);
   const [recommendationError, setRecommendationError] = useState<string | null>(null);
+  const [tfidfError, setTfidfError] = useState<string | null>(null);
   const [userEmbedding, setUserEmbedding] = useState<number[] | null>(null);
 
   const algorithms = [
     { id: 'collaborative', name: 'Collaborative Filtering' },
     { id: 'content', name: 'Content-Based' },
     { id: 'hybrid', name: 'Hybrid Approach' },
-    { id: 'contextual', name: 'Contextual' }
+    { id: 'tfidf', name: 'TF-IDF Content-Based' }
   ];
 
   // Mock data for recently watched movies
@@ -73,12 +77,40 @@ const DashboardPage: React.FC = () => {
     }
   };
 
+  const fetchTFIDFRecommendations = async () => {
+    if (!isAuthenticated) return;
+
+    setIsLoadingTFIDF(true);
+    setTfidfError(null);
+
+    try {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await getTFIDFRecommendations(token, 20);
+      setTfidfRecommendations(response.data.recommendations);
+    } catch (error: any) {
+      console.error('Failed to fetch TF-IDF recommendations:', error);
+      
+      if (error.response?.data?.code === 'NO_PREFERENCES') {
+        setTfidfError('Please rate some movies first to get TF-IDF recommendations.');
+      } else {
+        setTfidfError('Failed to load TF-IDF recommendations. Please try again.');
+      }
+    } finally {
+      setIsLoadingTFIDF(false);
+    }
+  };
   useEffect(() => {
     fetchRecommendations();
+    fetchTFIDFRecommendations();
   }, [isAuthenticated]);
 
   const handleRefreshRecommendations = () => {
     fetchRecommendations();
+    fetchTFIDFRecommendations();
   };
 
   // Transform recommendations for MovieCarousel
@@ -92,6 +124,15 @@ const DashboardPage: React.FC = () => {
     overview: movie.overview
   }));
 
+  const transformedTFIDFRecommendations = tfidfRecommendations.map(movie => ({
+    id: movie.tmdbId,
+    title: movie.title,
+    posterPath: movie.posterUrl,
+    releaseDate: movie.releaseDate || '',
+    voteAverage: movie.voteAverage,
+    genres: movie.genre,
+    overview: movie.overview
+  }));
   return (
     <div className={styles.container}>
       <header className={styles.header}>
@@ -234,6 +275,52 @@ const DashboardPage: React.FC = () => {
           </div>
         </div>
 
+        <div className={styles.recommendationsCard}>
+          <div className={styles.recommendationsContent}>
+            <div className="flex justify-between items-center mb-4">
+              <h2 className={styles.recommendationsTitle}>TF-IDF Content-Based Recommendations</h2>
+              <button
+                onClick={fetchTFIDFRecommendations}
+                disabled={isLoadingTFIDF}
+                className="inline-flex items-center px-3 py-2 text-sm font-medium text-green-800 bg-green-50 rounded-lg hover:bg-green-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <RefreshCw className={`h-4 w-4 mr-2 ${isLoadingTFIDF ? 'animate-spin' : ''}`} />
+                Refresh
+              </button>
+            </div>
+
+            {isLoadingTFIDF ? (
+              <div className="flex justify-center items-center py-12">
+                <LoadingSpinner size="large" />
+                <span className="ml-3 text-gray-600">Loading content-based recommendations...</span>
+              </div>
+            ) : tfidfError ? (
+              <div className="text-center py-12">
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
+                  <Info className="h-8 w-8 text-yellow-600 mx-auto mb-3" />
+                  <h3 className="text-lg font-medium text-yellow-800 mb-2">No TF-IDF Recommendations Available</h3>
+                  <p className="text-yellow-700 mb-4">{tfidfError}</p>
+                </div>
+              </div>
+            ) : tfidfRecommendations.length > 0 ? (
+              <div>
+                <div className="mb-4 text-sm text-gray-600">
+                  Based on movie content and tags, we found {tfidfRecommendations.length} similar movies
+                </div>
+                <MovieCarousel 
+                  title="Content-Based Recommendations" 
+                  movies={transformedTFIDFRecommendations}
+                />
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <Film className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No TF-IDF Recommendations Yet</h3>
+                <p className="text-gray-600">Rate some movies to get content-based recommendations!</p>
+              </div>
+            )}
+          </div>
+        </div>
         <div className={styles.recentlyWatchedCard}>
           <div className={styles.recentlyWatchedContent}>
             <h2 className={styles.recentlyWatchedTitle}>Recently Watched</h2>

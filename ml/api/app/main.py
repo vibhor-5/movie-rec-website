@@ -6,10 +6,14 @@ from pydantic import BaseModel
 import json
 from fastapi.responses import JSONResponse
 from fastapi import HTTPException
+from models.tf_idf.model import TFIDFModel
 
 class preferences(BaseModel):
     movie_ids:list[int]
     ratings:list[float]
+
+class TFIDFPreferences(BaseModel):
+    interactions: list[tuple[int, float]]  # [(movie_id, rating), ...]
 
 mf_config={
     "model_name": "matrix_factorization",
@@ -32,11 +36,21 @@ links=pl.read_csv("/Users/vibhorkumar/Desktop/projs/project/ml/api/app/data/link
 id_dict=dict(zip(links["tmdbId"].to_list(),links["movieId"].to_list()))
 id_dict_rev={v:k for k, v in id_dict.items()}
 predictor_model=predictor()
+tfidf_model=TFIDFModel(
+    movie_path="/Users/vibhorkumar/Desktop/projs/project/ml/data/ml-32m/movies.csv",
+    tags_path="/Users/vibhorkumar/Desktop/projs/project/ml/data/ml-32m/tags.csv"
+)
 pos_weight=1.0
 
 @asynccontextmanager
 async def lifespan(app:FastAPI):
     predictor_model.load_model("/Users/vibhorkumar/Desktop/projs/project/ml/api/app/model_checkpoints/mf_ml32m.pth",mf_config,metadata)
+    try:
+        tfidf_model.load()
+        print("TF-IDF model loaded successfully")
+    except Exception as e:
+        print(f"Warning: Could not load TF-IDF model: {e}")
+        print("TF-IDF recommendations will not be available")
     yield
     id_dict.clear()
     id_dict_rev.clear()
@@ -72,6 +86,50 @@ async def recommendation(pref: preferences, k: int = 10):
         "user_embedding": user_emb
     }
 
+@app.post("/tfidf-recommendation")
+async def tfidf_recommendation(pref: TFIDFPreferences, k: int = 10):
+    try:
+        # Convert TMDB IDs to internal movie IDs for TF-IDF model
+        valid_interactions = []
+        missing_ids = []
+        
+        for tmdb_id, rating in pref.interactions:
+            if tmdb_id in id_dict:
+                internal_id = id_dict[tmdb_id]
+                valid_interactions.append((internal_id, rating))
+            else:
+                missing_ids.append(tmdb_id)
+        
+        if not valid_interactions:
+            raise HTTPException(
+                status_code=400,
+                detail=f"No valid TMDB IDs found. Missing: {missing_ids}"
+            )
+        
+        # Get recommendations from TF-IDF model
+        recommendations, scores = tfidf_model.recommend(
+            interactions=valid_interactions,
+            k=k,
+            min_pos_rating=3
+        )
+        
+        # Convert back to TMDB IDs
+        tmdb_recommendations = [
+            id_dict_rev.get(x, f"unknown_{x}") for x in recommendations
+        ]
+        
+        return {
+            "recommendations": tmdb_recommendations,
+            "recommendation_scores": scores.tolist() if hasattr(scores, 'tolist') else list(scores),
+            "skipped_tmdb_ids": missing_ids,
+            "algorithm": "tfidf"
+        }
+        
+    except Exception as e:
+        raise HTTPException(
+            status_code=500,
+            detail=f"TF-IDF recommendation failed: {str(e)}"
+        )
 @app.get("/health")
 async def health_check():
     if not predictor_model or not id_dict or not id_dict_rev:

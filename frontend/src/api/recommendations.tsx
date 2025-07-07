@@ -15,9 +15,11 @@ interface RecommendationResponse {
       releaseDate: string | null;
       score: number;
       rank: number;
+      algorithm?: string;
     }>;
     user_embedding: number[];
     total_count: number;
+    algorithm?: string;
   };
 }
 
@@ -42,6 +44,20 @@ export const getRecommendations = async (token: string, limit: number = 10): Pro
         return response.data;
     } catch (error) {
         console.error('Error fetching recommendations:', error);
+        throw error;
+    }
+};
+export const getTFIDFRecommendations = async (token: string, limit: number = 10): Promise<RecommendationResponse> => {
+    try {
+        const response = await api.post<RecommendationResponse>('/recommendations/tfidf', {}, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            },
+            params: { limit }
+        });
+        return response.data;
+    } catch (error) {
+        console.error('Error fetching TF-IDF recommendations:', error);
         throw error;
     }
 };

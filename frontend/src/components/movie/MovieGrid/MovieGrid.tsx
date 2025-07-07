@@ -1,12 +1,12 @@
-import React, { useState } from 'react';
-import MovieCard from '../../common/MovieCard/MovieCard';
-import GenreFilter from '../GenreFilter/GenreFilter';
-import styles from './MovieGrid.module.css';
+import React, { useState } from "react";
+import MovieCard from "../../common/MovieCard/MovieCard";
+import GenreFilter from "../GenreFilter/GenreFilter";
+import styles from "./MovieGrid.module.css";
 
 interface Movie {
   id: number;
   title: string;
-  posterPath: string;
+  posterPath: string | null;
   releaseDate: string;
   voteAverage: number;
   genres: string[];
@@ -22,21 +22,24 @@ interface MovieGridProps {
 const MovieGrid: React.FC<MovieGridProps> = ({
   movies,
   isLoading = false,
-  onMovieSelect
+  onMovieSelect,
 }) => {
   const [selectedGenres, setSelectedGenres] = useState<string[]>([]);
-  const [sortBy, setSortBy] = useState<'rating' | 'date'>('rating');
+  const [sortBy, setSortBy] = useState<"rating" | "date">("rating");
 
   const filteredMovies = movies
-    .filter(movie => 
-      selectedGenres.length === 0 ||
-      selectedGenres.some(genre => movie.genres.includes(genre))
+    .filter(
+      (movie) =>
+        selectedGenres.length === 0 ||
+        selectedGenres.some((genre) => movie.genres.includes(genre))
     )
     .sort((a, b) => {
-      if (sortBy === 'rating') {
+      if (sortBy === "rating") {
         return b.voteAverage - a.voteAverage;
       }
-      return new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime();
+      return (
+        new Date(b.releaseDate).getTime() - new Date(a.releaseDate).getTime()
+      );
     });
 
   if (isLoading) {
@@ -56,7 +59,7 @@ const MovieGrid: React.FC<MovieGridProps> = ({
           selectedGenres={selectedGenres}
           onGenreChange={setSelectedGenres}
         />
-        
+
         <div className={styles.sortControl}>
           <label htmlFor="sort" className={styles.sortLabel}>
             Sort by:
@@ -64,7 +67,7 @@ const MovieGrid: React.FC<MovieGridProps> = ({
           <select
             id="sort"
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as 'rating' | 'date')}
+            onChange={(e) => setSortBy(e.target.value as "rating" | "date")}
             className={styles.sortSelect}
           >
             <option value="rating">Rating</option>
@@ -81,10 +84,7 @@ const MovieGrid: React.FC<MovieGridProps> = ({
         <div className={styles.grid}>
           {filteredMovies.map((movie) => (
             <div key={movie.id} className={styles.gridItem}>
-              <MovieCard
-                {...movie}
-                onClick={() => onMovieSelect?.(movie)}
-              />
+              <MovieCard {...movie} onClick={() => onMovieSelect?.(movie)} />
             </div>
           ))}
         </div>
@@ -93,4 +93,4 @@ const MovieGrid: React.FC<MovieGridProps> = ({
   );
 };
 
-export default MovieGrid; 
+export default MovieGrid;

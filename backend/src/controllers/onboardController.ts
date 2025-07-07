@@ -8,7 +8,7 @@ export const savePreference = async (req: Request, res: Response): Promise<void>
     try {
         const userId = (req as Request & { user: { id: string } }).user.id;
         const preferences = req.body; // [{ tmdbId, rating, seen, imdbid }]
-        
+
         if (!Array.isArray(preferences)) {
             res.status(400).json({ error: 'Preferences must be an array' });
             return;
@@ -41,8 +41,8 @@ export const savePreference = async (req: Request, res: Response): Promise<void>
 
             try {
                 // First, try to find the movie in the database
-                movie = await prisma.movie.findUnique({ 
-                    where: { tmdbId: pref.tmdbId } 
+                movie = await prisma.movie.findUnique({
+                    where: { tmdbId: pref.tmdbId }
                 });
 
                 // If not found, try to fetch from TMDB and create it
@@ -74,9 +74,9 @@ export const savePreference = async (req: Request, res: Response): Promise<void>
                 // Save preference with validated movie and user
                 await prisma.userPreference.upsert({
                     where: { userId_movieId: { userId, movieId: movie.tmdbId } },
-                    update: { 
-                        rating: pref.rating, 
-                        seen: pref.seen 
+                    update: {
+                        rating: pref.rating,
+                        seen: pref.seen
                     },
                     create: {
                         userId,
@@ -123,14 +123,14 @@ export const savePreference = async (req: Request, res: Response): Promise<void>
 
     } catch (error) {
         console.error('Error saving preferences:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'Failed to save preferences',
             details: error instanceof Error ? error.message : 'Unknown error'
         });
     }
 };
 
-export const search= async (req: Request, res: Response): Promise<void> => {
+export const search = async (req: Request, res: Response): Promise<void> => {
     try {
         const query = req.query.query;
 
@@ -228,3 +228,51 @@ export const SimilarList = async (req: Request, res: Response): Promise<void> =>
         }
     }
 }
+
+export const markOnboardingCompleted = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const userId = (req as Request & { user: { id: string } }).user.id;
+
+        // Validate that the user exists in the database
+        const existingUser = await prisma.user.findUnique({
+            where: { id: userId }
+        });
+
+        if (!existingUser) {
+            res.status(401).json({ error: 'User not found. Please log in again.' });
+            return;
+        }
+
+        // Mark onboarding as completed
+        await prisma.user.update({
+            where: { id: userId },
+            data: { onboardingCompleted: true }
+        });
+
+        res.status(200).json({
+            success: true,
+            message: 'Onboarding marked as completed'
+        });
+
+    } catch (error) {
+        console.error('Error marking onboarding as completed:', error);
+        res.status(500).json({
+            error: 'Failed to mark onboarding as completed',
+            details: error instanceof Error ? error.message : 'Unknown error'
+        });
+    }
+};
+
+export const getAvailableGenres = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const genres = await prisma.genre.findMany({
+            select: { id: true, name: true },
+            orderBy: { name: 'asc' }
+        });
+
+        res.json(genres);
+    } catch (error) {
+        console.error('Error fetching genres:', error);
+        res.status(500).json({ error: 'Failed to fetch genres' });
+    }
+};

@@ -1,9 +1,13 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Sliders } from 'lucide-react';
-import MovieGrid from '../../components/movie/MovieGrid/MovieGrid';
-import MovieOverlay from '../../components/common/MovieOverlay/MovieOverlay';
-import { getPopularMovies, searchMovies, getMoviesByGenre } from '../../api/movies';
-import styles from './Movies.module.css';
+import React, { useState, useEffect } from "react";
+import { Search, Filter, Sliders } from "lucide-react";
+import MovieGrid from "../../components/movie/MovieGrid/MovieGrid";
+import MovieOverlay from "../../components/common/MovieOverlay/MovieOverlay";
+import {
+  getPopularMovies,
+  searchMovies,
+  getMoviesByGenre,
+} from "../../api/movies";
+import styles from "./Movies.module.css";
 
 interface Movie {
   id: number;
@@ -19,33 +23,49 @@ interface Movie {
 }
 
 const Movies: React.FC = () => {
-  const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedMovie, setSelectedMovie] = useState<Movie | null>(null);
   const [isOverlayOpen, setIsOverlayOpen] = useState(false);
-  const [selectedGenre, setSelectedGenre] = useState('');
-  const [yearFrom, setYearFrom] = useState('');
-  const [yearTo, setYearTo] = useState('');
-  const [minRating, setMinRating] = useState('');
+  const [selectedGenre, setSelectedGenre] = useState("");
+  const [yearFrom, setYearFrom] = useState("");
+  const [yearTo, setYearTo] = useState("");
+  const [minRating, setMinRating] = useState("");
 
   useEffect(() => {
     const fetchMovies = async () => {
       setIsLoading(true);
       try {
+        let apiResults;
         if (searchQuery.trim()) {
-          const searchResults = await searchMovies(searchQuery);
-          setMovies(searchResults);
+          apiResults = await searchMovies(searchQuery);
         } else if (selectedGenre) {
-          const genreMovies = await getMoviesByGenre(selectedGenre);
-          setMovies(genreMovies);
+          apiResults = await getMoviesByGenre(selectedGenre);
         } else {
-          const popularMovies = await getPopularMovies(1);
-          setMovies(popularMovies);
+          apiResults = await getPopularMovies(1);
         }
+
+        // Map backend fields to frontend expectations
+        const mappedMovies = apiResults.map((movie: any) => ({
+          id: movie.id || movie.tmdbId,
+          title: movie.title,
+          posterPath:
+            movie.posterUrl ||
+            "https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300", // Map posterUrl to posterPath with fallback
+          releaseDate: movie.releaseDate || "",
+          voteAverage: movie.voteAverage || 0,
+          genres: movie.genre || movie.genres || [],
+          overview: movie.overview || "",
+          year: movie.year,
+          imdbId: movie.imdbId || null,
+          tmdbId: movie.tmdbId,
+        }));
+
+        setMovies(mappedMovies);
       } catch (error) {
-        console.error('Error fetching movies:', error);
+        console.error("Error fetching movies:", error);
       } finally {
         setIsLoading(false);
       }
@@ -56,12 +76,12 @@ const Movies: React.FC = () => {
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    setSelectedGenre(''); // Clear genre filter when searching
+    setSelectedGenre(""); // Clear genre filter when searching
   };
 
   const handleGenreChange = (genre: string) => {
     setSelectedGenre(genre);
-    setSearchQuery(''); // Clear search when filtering by genre
+    setSearchQuery(""); // Clear search when filtering by genre
   };
   const handleMovieSelect = (movie: Movie) => {
     setSelectedMovie(movie);
@@ -74,17 +94,17 @@ const Movies: React.FC = () => {
   };
 
   const handleAddToWatchlist = (movie: Movie) => {
-    console.log('Added to watchlist:', movie.title);
+    console.log("Added to watchlist:", movie.title);
     // TODO: Implement watchlist functionality
   };
 
   const handleMarkAsWatched = (movie: Movie) => {
-    console.log('Marked as watched:', movie.title);
+    console.log("Marked as watched:", movie.title);
     // TODO: Implement watched functionality
   };
 
   const handleRateMovie = (movie: Movie, rating: number) => {
-    console.log('Rated movie:', movie.title, 'Rating:', rating);
+    console.log("Rated movie:", movie.title, "Rating:", rating);
     // TODO: Implement rating functionality
   };
 
@@ -142,7 +162,9 @@ const Movies: React.FC = () => {
               <div className="mt-4 p-4 bg-slate-700 rounded-lg border border-slate-600">
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
-                    <label className="block text-sm font-medium text-slate-300">Genre</label>
+                    <label className="block text-sm font-medium text-slate-300">
+                      Genre
+                    </label>
                     <select
                       value={selectedGenre}
                       onChange={(e) => handleGenreChange(e.target.value)}
@@ -166,7 +188,9 @@ const Movies: React.FC = () => {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-300">Year Range</label>
+                    <label className="block text-sm font-medium text-slate-300">
+                      Year Range
+                    </label>
                     <div className="mt-1 flex gap-2">
                       <input
                         type="number"
@@ -185,8 +209,10 @@ const Movies: React.FC = () => {
                     </div>
                   </div>
                   <div>
-                    <label className="block text-sm font-medium text-slate-300">Rating</label>
-                    <select 
+                    <label className="block text-sm font-medium text-slate-300">
+                      Rating
+                    </label>
+                    <select
                       value={minRating}
                       onChange={(e) => setMinRating(e.target.value)}
                       className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-slate-600 bg-slate-800 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm rounded-md"
@@ -206,8 +232,8 @@ const Movies: React.FC = () => {
         {/* Movie Grid */}
         <div className="bg-slate-800 rounded-lg shadow-sm overflow-hidden border border-slate-700">
           <div className="p-6">
-            <MovieGrid 
-              movies={movies} 
+            <MovieGrid
+              movies={movies}
               isLoading={isLoading}
               onMovieSelect={handleMovieSelect}
             />

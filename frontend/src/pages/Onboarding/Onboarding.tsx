@@ -1,20 +1,27 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Star, Search, ChevronRight } from 'lucide-react';
-import LoadingSpinner from '../../components/common/LoadingSpinner/LoadingSpinner';
-import styles from './Onboarding.module.css';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { Star, Search, ChevronRight, ChevronLeft, X } from "lucide-react";
+import LoadingSpinner from "../../components/common/LoadingSpinner/LoadingSpinner";
+import styles from "./Onboarding.module.css";
 
-import { userPreferences } from '../../api/onboarding';
-import { useAuthContext } from '../../contexts/AuthContext';
+import {
+  userPreferences,
+  markOnboardingCompleted,
+  getPopularMovies,
+  getGenreMovies,
+  searchMovies,
+  getAvailableGenres,
+} from "../../api/onboarding";
+import { useAuthContext } from "../../contexts/AuthContext";
 
 interface Movie {
-  id: number;
+  tmdbId: number;
   title: string;
-  year: number;
-  poster: string;
-  genres: string[];
-  rating: number;
-  popularity: number;
+  year: number | null;
+  posterUrl: string | null;
+  genre: string[];
+  voteAverage: number;
+  overview: string;
 }
 
 interface MovieRating {
@@ -23,34 +30,10 @@ interface MovieRating {
   watched: boolean;
 }
 
-const POPULAR_MOVIES: Movie[] = [
-  { id: 1, title: 'The Shawshank Redemption', year: 1994, poster: 'https://images.pexels.com/photos/5662857/pexels-photo-5662857.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama'], rating: 9.3, popularity: 95 },
-  { id: 2, title: 'The Godfather', year: 1972, poster: 'https://images.pexels.com/photos/7234243/pexels-photo-7234243.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Crime', 'Drama'], rating: 9.2, popularity: 92 },
-  { id: 3, title: 'The Dark Knight', year: 2008, poster: 'https://images.pexels.com/photos/8118880/pexels-photo-8118880.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Crime'], rating: 9.0, popularity: 98 },
-  { id: 4, title: 'Pulp Fiction', year: 1994, poster: 'https://images.pexels.com/photos/7991579/pexels-photo-7991579.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Crime', 'Drama'], rating: 8.9, popularity: 89 },
-  { id: 5, title: 'Forrest Gump', year: 1994, poster: 'https://images.pexels.com/photos/2549565/pexels-photo-2549565.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Romance'], rating: 8.8, popularity: 94 },
-  { id: 6, title: 'Inception', year: 2010, poster: 'https://images.pexels.com/photos/8118890/pexels-photo-8118890.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'], rating: 8.8, popularity: 96 },
-  { id: 7, title: 'The Matrix', year: 1999, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'], rating: 8.7, popularity: 91 },
-  { id: 8, title: 'Goodfellas', year: 1990, poster: 'https://images.pexels.com/photos/3137890/pexels-photo-3137890.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Crime', 'Drama'], rating: 8.7, popularity: 85 },
-  { id: 9, title: 'The Lord of the Rings: The Fellowship of the Ring', year: 2001, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Adventure', 'Fantasy'], rating: 8.8, popularity: 93 },
-  { id: 10, title: 'Star Wars: Episode IV - A New Hope', year: 1977, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'], rating: 8.6, popularity: 97 },
-  { id: 11, title: 'Casablanca', year: 1942, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Romance'], rating: 8.5, popularity: 78 },
-  { id: 12, title: 'Citizen Kane', year: 1941, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama'], rating: 8.3, popularity: 72 },
-  { id: 13, title: 'Titanic', year: 1997, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Romance'], rating: 7.8, popularity: 99 },
-  { id: 14, title: 'Jurassic Park', year: 1993, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Adventure'], rating: 8.1, popularity: 95 },
-  { id: 15, title: 'Avatar', year: 2009, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Sci-Fi'], rating: 7.8, popularity: 97 },
-  { id: 16, title: 'The Avengers', year: 2012, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Adventure'], rating: 8.0, popularity: 98 },
-  { id: 17, title: 'Toy Story', year: 1995, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'], rating: 8.3, popularity: 88 },
-  { id: 18, title: 'Finding Nemo', year: 2003, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'], rating: 8.2, popularity: 90 },
-  { id: 19, title: 'The Lion King', year: 1994, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'], rating: 8.5, popularity: 92 },
-  { id: 20, title: 'Frozen', year: 2013, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Family'], rating: 7.4, popularity: 96 },
-  { id: 21, title: 'Interstellar', year: 2014, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Sci-Fi'], rating: 8.6, popularity: 89 },
-  { id: 22, title: 'Parasite', year: 2019, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Drama', 'Thriller'], rating: 8.6, popularity: 87 },
-  { id: 23, title: 'Spider-Man: Into the Spider-Verse', year: 2018, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Animation', 'Action'], rating: 8.4, popularity: 91 },
-  { id: 24, title: 'Black Panther', year: 2018, poster: 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300', genres: ['Action', 'Adventure'], rating: 7.3, popularity: 94 }
-];
-
-const GENRES = ['All', 'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'Drama', 'Family', 'Fantasy', 'Romance', 'Sci-Fi', 'Thriller'];
+interface Genre {
+  id: number;
+  name: string;
+}
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
@@ -61,54 +44,143 @@ const Onboarding: React.FC = () => {
   const [movies, setMovies] = useState<Movie[]>([]);
   const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
   const [ratings, setRatings] = useState<MovieRating[]>([]);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [selectedGenre, setSelectedGenre] = useState('All');
+  const [searchQuery, setSearchQuery] = useState("");
+  const [selectedGenre, setSelectedGenre] = useState("All");
+  const [showExitConfirm, setShowExitConfirm] = useState(false);
+  const [showSkipConfirm, setShowSkipConfirm] = useState(false);
+  const [genres, setGenres] = useState<Genre[]>([]);
+  const [currentPage, setCurrentPage] = useState(1);
 
   const totalSteps = 3;
   const minRatings = 10;
   const progress = (currentStep / totalSteps) * 100;
-  const ratedMoviesCount = ratings.filter(r => r.watched && r.rating > 0).length;
+  const ratedMoviesCount = ratings.filter(
+    (r) => r.watched && r.rating > 0
+  ).length;
   const canContinue = ratedMoviesCount >= minRatings;
 
+  // Handle escape key and navigation safety
   useEffect(() => {
-    // Simulate loading movies
-    setIsLoading(true);
-    setTimeout(() => {
-      // Sort by popularity for better initial display
-      const sortedMovies = [...POPULAR_MOVIES].sort((a, b) => b.popularity - a.popularity);
-      setMovies(sortedMovies);
-      setFilteredMovies(sortedMovies);
-      setIsLoading(false);
-    }, 1000);
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        if (currentStep === 1) {
+          setShowExitConfirm(true);
+        } else {
+          setCurrentStep(currentStep - 1);
+        }
+      }
+    };
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      if (currentStep > 1) {
+        event.preventDefault();
+        event.returnValue = "";
+      }
+    };
+
+    document.addEventListener("keydown", handleEscape);
+    window.addEventListener("beforeunload", handleBeforeUnload);
+
+    return () => {
+      document.removeEventListener("keydown", handleEscape);
+      window.removeEventListener("beforeunload", handleBeforeUnload);
+    };
+  }, [currentStep]);
+
+  // Load genres on component mount
+  useEffect(() => {
+    const loadGenres = async () => {
+      try {
+        const genresData = await getAvailableGenres();
+        setGenres(genresData as Genre[]);
+      } catch (error) {
+        console.error("Error loading genres:", error);
+        // Fallback to common genres if API fails
+        setGenres([
+          { id: 28, name: "Action" },
+          { id: 12, name: "Adventure" },
+          { id: 16, name: "Animation" },
+          { id: 35, name: "Comedy" },
+          { id: 80, name: "Crime" },
+          { id: 99, name: "Documentary" },
+          { id: 18, name: "Drama" },
+          { id: 10751, name: "Family" },
+          { id: 14, name: "Fantasy" },
+          { id: 36, name: "History" },
+          { id: 27, name: "Horror" },
+          { id: 10402, name: "Music" },
+          { id: 9648, name: "Mystery" },
+          { id: 10749, name: "Romance" },
+          { id: 878, name: "Sci-Fi" },
+          { id: 53, name: "Thriller" },
+          { id: 10752, name: "War" },
+        ]);
+      }
+    };
+
+    loadGenres();
   }, []);
 
+  // Load movies based on current state
+  useEffect(() => {
+    const loadMovies = async () => {
+      setIsLoading(true);
+      try {
+        let moviesData: Movie[] = [];
+
+        if (searchQuery.trim()) {
+          // Search movies
+          moviesData = (await searchMovies(searchQuery)) as Movie[];
+        } else if (selectedGenre !== "All") {
+          // Get movies by genre
+          moviesData = (await getGenreMovies(
+            selectedGenre,
+            currentPage
+          )) as Movie[];
+        } else {
+          // Get popular movies
+          moviesData = (await getPopularMovies(currentPage)) as Movie[];
+        }
+
+        setMovies(moviesData);
+        setFilteredMovies(moviesData);
+      } catch (error) {
+        console.error("Error loading movies:", error);
+        setMovies([]);
+        setFilteredMovies([]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    if (currentStep === 2) {
+      loadMovies();
+    }
+  }, [currentStep, searchQuery, selectedGenre, currentPage]);
+
+  // Filter movies based on search and genre
   useEffect(() => {
     let filtered = movies;
 
     // Filter by search query
     if (searchQuery) {
-      filtered = filtered.filter(movie =>
+      filtered = filtered.filter((movie) =>
         movie.title.toLowerCase().includes(searchQuery.toLowerCase())
       );
     }
 
-    // Filter by genre
-    if (selectedGenre !== 'All') {
-      filtered = filtered.filter(movie =>
-        movie.genres.includes(selectedGenre)
-      );
-    }
+    // Note: Genre filtering is now handled by the API, so we don't need to filter here
+    // The API already returns movies for the selected genre
 
     setFilteredMovies(filtered);
-  }, [movies, searchQuery, selectedGenre]);
+  }, [movies, searchQuery]);
 
   const handleMovieRating = (movieId: number, rating: number) => {
-    setRatings(prev => {
-      const existingRating = prev.find(r => r.movieId === movieId);
+    console.log("Rating movie:", movieId, "with rating:", rating);
+    setRatings((prev) => {
+      const existingRating = prev.find((r) => r.movieId === movieId);
       if (existingRating) {
-        return prev.map(r =>
-          r.movieId === movieId ? { ...r, rating } : r
-        );
+        return prev.map((r) => (r.movieId === movieId ? { ...r, rating } : r));
       } else {
         return [...prev, { movieId, rating, watched: true }];
       }
@@ -116,11 +188,14 @@ const Onboarding: React.FC = () => {
   };
 
   const handleWatchedToggle = (movieId: number, watched: boolean) => {
-    setRatings(prev => {
-      const existingRating = prev.find(r => r.movieId === movieId);
+    console.log("Toggling watched for movie:", movieId, "watched:", watched);
+    setRatings((prev) => {
+      const existingRating = prev.find((r) => r.movieId === movieId);
       if (existingRating) {
-        return prev.map(r =>
-          r.movieId === movieId ? { ...r, watched, rating: watched ? r.rating : 0 } : r
+        return prev.map((r) =>
+          r.movieId === movieId
+            ? { ...r, watched, rating: watched ? r.rating : 0 }
+            : r
         );
       } else {
         return [...prev, { movieId, rating: 0, watched }];
@@ -129,7 +204,7 @@ const Onboarding: React.FC = () => {
   };
 
   const getMovieRating = (movieId: number): MovieRating => {
-    const rating = ratings.find(r => r.movieId === movieId);
+    const rating = ratings.find((r) => r.movieId === movieId);
     return rating || { movieId, rating: 0, watched: false };
   };
 
@@ -138,47 +213,101 @@ const Onboarding: React.FC = () => {
       // Save preferences before continuing
       setIsSaving(true);
       try {
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem("token");
         if (token && ratings.length > 0) {
           const preferencesToSave = ratings
-            .filter(r => r.watched && r.rating > 0)
-            .map(r => ({
+            .filter((r) => r.watched && r.rating > 0)
+            .map((r) => ({
               tmdbId: r.movieId,
               rating: r.rating,
-              seen: r.watched
+              seen: r.watched,
             }));
-          
           if (preferencesToSave.length > 0) {
             await userPreferences(token, preferencesToSave);
-            console.log('Preferences saved successfully');
+            console.log("Preferences saved successfully");
           }
         }
+      } catch (error) {
+        console.error("Error saving preferences:", error);
+      } finally {
+        setIsSaving(false);
+      }
+      if (currentStep < totalSteps) {
+        setCurrentStep(currentStep + 1);
+      } else {
+        // Complete onboarding and redirect to dashboard
+        await completeOnboarding();
+      }
+      return;
+    }
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {
       // Complete onboarding and redirect to dashboard
-      navigate('/dashboard');
+      await completeOnboarding();
     }
   };
 
+  const completeOnboarding = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (token) {
+        await markOnboardingCompleted(token);
+        console.log("Onboarding marked as completed");
+      }
+    } catch (error) {
+      console.error("Error marking onboarding as completed:", error);
+    }
+    navigate("/dashboard");
+  };
+
+  const handleBack = () => {
+    if (currentStep > 1) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
+
+  const handleExit = () => {
+    setShowExitConfirm(true);
+  };
+
+  const confirmExit = () => {
+    setShowExitConfirm(false);
+    navigate("/dashboard");
+  };
+
+  const cancelExit = () => {
+    setShowExitConfirm(false);
+  };
+
   const handleSkip = () => {
-    navigate('/dashboard');
+    if (currentStep === 2 && ratedMoviesCount > 0) {
+      setShowSkipConfirm(true);
+    } else {
+      navigate("/dashboard");
+    }
+  };
+
+  const confirmSkip = () => {
+    setShowSkipConfirm(false);
+    navigate("/dashboard");
+  };
+
+  const cancelSkip = () => {
+    setShowSkipConfirm(false);
   };
 
   const renderWelcomeStep = () => (
     <div className={styles.stepContent}>
       <div className={styles.welcomeContainer}>
         <div className={styles.welcomeIcon}>🎬</div>
-        <h2 className={styles.welcomeTitle}>
-          Welcome to MovieRec!
-        </h2>
+        <h2 className={styles.welcomeTitle}>Welcome to MovieRec!</h2>
         <p className={styles.welcomeDescription}>
-          We're excited to help you discover amazing movies! To get started, we need to learn about your taste in films.
+          We're excited to help you discover amazing movies! To get started, we
+          need to learn about your taste in films.
         </p>
         <div className={styles.processCard}>
-          <h3 className={styles.processTitle}>
-            Here's how it works:
-          </h3>
+          <h3 className={styles.processTitle}>Here's how it works:</h3>
           <div className={styles.processSteps}>
             <div className={styles.processStep}>
               <span className={styles.processNumber}>1</span>
@@ -226,13 +355,24 @@ const Onboarding: React.FC = () => {
           />
         </div>
         <div className={styles.filterButtons}>
-          {GENRES.map(genre => (
+          <button
+            key="all"
+            onClick={() => setSelectedGenre("All")}
+            className={`${styles.filterButton} ${
+              selectedGenre === "All" ? styles.active : ""
+            }`}
+          >
+            All
+          </button>
+          {genres.map((genre) => (
             <button
-              key={genre}
-              onClick={() => setSelectedGenre(genre)}
-              className={`${styles.filterButton} ${selectedGenre === genre ? styles.active : ''}`}
+              key={genre.id}
+              onClick={() => setSelectedGenre(genre.name)}
+              className={`${styles.filterButton} ${
+                selectedGenre === genre.name ? styles.active : ""
+              }`}
             >
-              {genre}
+              {genre.name}
             </button>
           ))}
         </div>
@@ -249,27 +389,35 @@ const Onboarding: React.FC = () => {
         </div>
       ) : (
         <div className={styles.movieGrid}>
-          {filteredMovies.map(movie => {
-            const movieRating = getMovieRating(movie.id);
+          {filteredMovies.map((movie) => {
+            const movieRating = getMovieRating(movie.tmdbId);
             return (
               <div
-                key={movie.id}
-                className={`${styles.movieCard} ${movieRating.watched && movieRating.rating > 0 ? styles.selected : ''}`}
+                key={movie.tmdbId}
+                className={`${styles.movieCard} ${
+                  movieRating.watched && movieRating.rating > 0
+                    ? styles.selected
+                    : ""
+                }`}
               >
                 <div className={styles.moviePosterContainer}>
                   <img
-                    src={movie.poster}
+                    src={
+                      movie.posterUrl ||
+                      "https://via.placeholder.com/300x450/1e293b/64748b?text=Movie+Poster"
+                    }
                     alt={movie.title}
                     className={styles.moviePoster}
                     onError={(e) => {
                       const target = e.target as HTMLImageElement;
-                      target.src = 'https://images.pexels.com/photos/2873486/pexels-photo-2873486.jpeg?auto=compress&cs=tinysrgb&w=300';
+                      target.src =
+                        "https://via.placeholder.com/300x450/1e293b/64748b?text=Movie+Poster";
                     }}
                   />
                   <div className={styles.movieOverlay}>
                     <div className={styles.movieRating}>
                       <Star className={styles.imdbStar} />
-                      <span>{movie.rating}</span>
+                      <span>{movie.voteAverage}</span>
                     </div>
                   </div>
                 </div>
@@ -278,44 +426,50 @@ const Onboarding: React.FC = () => {
                   <div className={styles.movieMeta}>
                     <span className={styles.movieYear}>{movie.year}</span>
                     <span className={styles.movieGenres}>
-                      {movie.genres.slice(0, 2).join(', ')}
+                      {movie.genre.slice(0, 2).join(", ")}
                     </span>
                   </div>
                   <div className={styles.ratingSection}>
                     <div className={styles.watchedCheckbox}>
                       <input
                         type="checkbox"
-                        id={`watched-${movie.id}`}
+                        id={`watched-${movie.tmdbId}`}
                         checked={movieRating.watched}
-                        onChange={(e) => handleWatchedToggle(movie.id, e.target.checked)}
+                        onChange={(e) =>
+                          handleWatchedToggle(movie.tmdbId, e.target.checked)
+                        }
                       />
-                      <label htmlFor={`watched-${movie.id}`} className={styles.watchedLabel}>
+                      <label
+                        htmlFor={`watched-${movie.tmdbId}`}
+                        className={styles.watchedLabel}
+                      >
                         I've watched this
                       </label>
                     </div>
                     <div className={styles.ratingContainer}>
-                      {[1, 2, 3, 4, 5].map(star => (
+                      {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
                           className={`${styles.star} ${
-                            star <= movieRating.rating ? styles.filled : ''
-                          } ${!movieRating.watched ? styles.disabled : ''}`}
+                            star <= movieRating.rating ? styles.filled : ""
+                          } ${!movieRating.watched ? styles.disabled : ""}`}
                           onClick={() => {
                             if (movieRating.watched) {
-                              handleMovieRating(movie.id, star);
+                              handleMovieRating(movie.tmdbId, star);
                             }
                           }}
-                          fill={star <= movieRating.rating ? 'currentColor' : 'none'}
+                          fill={
+                            star <= movieRating.rating ? "currentColor" : "none"
+                          }
                         />
                       ))}
                     </div>
                     <div className={styles.ratingLabel}>
-                      {movieRating.watched 
-                        ? movieRating.rating > 0 
+                      {movieRating.watched
+                        ? movieRating.rating > 0
                           ? `${movieRating.rating}/5 stars`
-                          : 'Click to rate'
-                        : 'Mark as watched to rate'
-                      }
+                          : "Click to rate"
+                        : "Mark as watched to rate"}
                     </div>
                   </div>
                 </div>
@@ -335,12 +489,11 @@ const Onboarding: React.FC = () => {
           Perfect! You've rated {ratedMoviesCount} movies
         </h2>
         <p className={styles.completionDescription}>
-          Our algorithm is now learning your preferences. You can fine-tune your recommendations anytime in your profile settings.
+          Our algorithm is now learning your preferences. You can fine-tune your
+          recommendations anytime in your profile settings.
         </p>
         <div className={styles.completionCard}>
-          <h3 className={styles.completionCardTitle}>
-            What happens next?
-          </h3>
+          <h3 className={styles.completionCardTitle}>What happens next?</h3>
           <div className={styles.completionSteps}>
             <div className={styles.completionStep}>
               <span className={styles.checkmark}>✓</span>
@@ -366,18 +519,25 @@ const Onboarding: React.FC = () => {
             <div className={styles.tasteItem}>
               <span className={styles.tasteLabel}>Preferred Genres</span>
               <div className={styles.tasteGenres}>
-                {['Drama', 'Sci-Fi', 'Action'].map(genre => (
-                  <span key={genre} className={styles.tasteGenre}>{genre}</span>
+                {["Drama", "Sci-Fi", "Action"].map((genre) => (
+                  <span key={genre} className={styles.tasteGenre}>
+                    {genre}
+                  </span>
                 ))}
               </div>
             </div>
             <div className={styles.tasteItem}>
               <span className={styles.tasteLabel}>Average Rating</span>
               <span className={styles.tasteValue}>
-                {ratedMoviesCount > 0 
-                  ? (ratings.filter(r => r.watched && r.rating > 0).reduce((sum, r) => sum + r.rating, 0) / ratedMoviesCount).toFixed(1)
-                  : '0.0'
-                } / 5.0
+                {ratedMoviesCount > 0
+                  ? (
+                      ratings
+                        .filter((r) => r.watched && r.rating > 0)
+                        .reduce((sum, r) => sum + r.rating, 0) /
+                      ratedMoviesCount
+                    ).toFixed(1)
+                  : "0.0"}{" "}
+                / 5.0
               </span>
             </div>
             <div className={styles.tasteItem}>
@@ -406,26 +566,26 @@ const Onboarding: React.FC = () => {
   const getStepTitle = () => {
     switch (currentStep) {
       case 1:
-        return 'Let\'s Get Started';
+        return "Let's Get Started";
       case 2:
-        return 'Rate Popular Movies';
+        return "Rate Popular Movies";
       case 3:
-        return 'You\'re All Set!';
+        return "You're All Set!";
       default:
-        return 'Welcome';
+        return "Welcome";
     }
   };
 
   const getStepSubtitle = () => {
     switch (currentStep) {
       case 1:
-        return 'Help us understand your movie preferences to get personalized recommendations';
+        return "Help us understand your movie preferences to get personalized recommendations";
       case 2:
         return `Rate movies you've watched to help us understand your taste (${ratedMoviesCount}/${minRatings} minimum)`;
       case 3:
-        return 'Your profile is ready! Let\'s start discovering amazing movies together.';
+        return "Your profile is ready! Let's start discovering amazing movies together.";
       default:
-        return '';
+        return "";
     }
   };
 
@@ -439,12 +599,15 @@ const Onboarding: React.FC = () => {
               Step {currentStep} of {totalSteps}
             </span>
             <div className={styles.progressBar}>
-              <div 
+              <div
                 className={styles.progressFill}
                 style={{ width: `${progress}%` }}
               />
             </div>
           </div>
+          <button onClick={handleExit} className={styles.exitButton}>
+            <X size={20} />
+          </button>
         </div>
       </header>
 
@@ -460,20 +623,22 @@ const Onboarding: React.FC = () => {
           <div className={styles.actions}>
             <div className={styles.selectedCount}>
               {currentStep === 2 && (
-                <span className={canContinue ? styles.complete : ''}>
-                  {ratedMoviesCount >= minRatings 
-                    ? `✓ ${ratedMoviesCount} movies rated` 
-                    : `${ratedMoviesCount}/${minRatings} movies rated`
-                  }
+                <span className={canContinue ? styles.complete : ""}>
+                  {ratedMoviesCount >= minRatings
+                    ? `✓ ${ratedMoviesCount} movies rated`
+                    : `${ratedMoviesCount}/${minRatings} movies rated`}
                 </span>
               )}
             </div>
             <div className={styles.actionButtons}>
-              <button
-                onClick={handleSkip}
-                className={styles.skipButton}
-              >
-                Skip for now
+              {currentStep > 1 && (
+                <button onClick={handleBack} className={styles.backButton}>
+                  <ChevronLeft className={styles.buttonIcon} />
+                  Back
+                </button>
+              )}
+              <button onClick={handleSkip} className={styles.skipButton}>
+                {currentStep === 1 ? "Skip for now" : "Skip this step"}
               </button>
               <button
                 onClick={handleContinue}
@@ -496,6 +661,61 @@ const Onboarding: React.FC = () => {
           </div>
         </div>
       </main>
+
+      {/* Exit Confirmation Modal */}
+      {showExitConfirm && (
+        <div className={styles.modalOverlay} onClick={cancelExit}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3>Exit Onboarding?</h3>
+            <p>
+              Are you sure you want to exit? Your progress will be saved, but
+              you can always come back to complete the setup.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                onClick={cancelExit}
+                className={styles.modalButtonSecondary}
+              >
+                Continue Onboarding
+              </button>
+              <button
+                onClick={confirmExit}
+                className={styles.modalButtonPrimary}
+              >
+                Exit
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Skip Confirmation Modal */}
+      {showSkipConfirm && (
+        <div className={styles.modalOverlay} onClick={cancelSkip}>
+          <div className={styles.modal} onClick={(e) => e.stopPropagation()}>
+            <h3>Skip Movie Rating?</h3>
+            <p>
+              You've rated {ratedMoviesCount} movies. Skipping now means you'll
+              get basic recommendations. You can always rate more movies later
+              for better suggestions.
+            </p>
+            <div className={styles.modalActions}>
+              <button
+                onClick={cancelSkip}
+                className={styles.modalButtonSecondary}
+              >
+                Continue Rating
+              </button>
+              <button
+                onClick={confirmSkip}
+                className={styles.modalButtonPrimary}
+              >
+                Skip & Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -25,6 +25,7 @@ model User {
   recommendations Movie[]            @relation("UserRecommendations")
   collab_embed    Float[]
   content_embed   Unsupported("vector(2000)")?
+  onboardingCompleted Boolean            @default(false)
 }
 
 model Movie {

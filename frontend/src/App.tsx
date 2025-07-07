@@ -56,7 +56,7 @@ const App: React.FC = () => {
             <Route
               path="/dashboard"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute requireOnboarding={true}>
                   <DashboardPage />
                 </ProtectedRoute>
               }
@@ -65,7 +65,7 @@ const App: React.FC = () => {
               path="/profile"
               element={
                 //<ProtectedRoute>
-                  <ProfilePage />
+                <ProfilePage />
                 //</ProtectedRoute>
               }
             />

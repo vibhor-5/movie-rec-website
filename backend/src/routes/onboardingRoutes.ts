@@ -1,7 +1,7 @@
 import express from 'express';
 import { PrismaClient } from '../generated/prisma';
 import { authenticateToken } from '../middleware/auth';
-import { savePreference, search, genreMovieList, getPopularList, SimilarList } from '../controllers/onboardController';
+import { savePreference, search, genreMovieList, getPopularList, SimilarList, markOnboardingCompleted, getAvailableGenres } from '../controllers/onboardController';
 import { Request, Response } from 'express';
 
 
@@ -9,6 +9,8 @@ const app = express.Router();
 const prisma = new PrismaClient();
 
 app.post('/user/preferences', authenticateToken, savePreference);
+app.post('/user/onboarding-completed', authenticateToken, markOnboardingCompleted);
+app.get('/genres', getAvailableGenres);
 app.get('/search', search);
 app.get('/api/genre', genreMovieList); //send the genre in Sentencecase
 app.get('/api/popular', getPopularList);//send page number

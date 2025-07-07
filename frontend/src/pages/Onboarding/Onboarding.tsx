@@ -4,6 +4,9 @@ import { Star, Search, ChevronRight } from 'lucide-react';
 import LoadingSpinner from '../../components/common/LoadingSpinner/LoadingSpinner';
 import styles from './Onboarding.module.css';
 
+import { userPreferences } from '../../api/onboarding';
+import { useAuthContext } from '../../contexts/AuthContext';
+
 interface Movie {
   id: number;
   title: string;
@@ -51,8 +54,10 @@ const GENRES = ['All', 'Action', 'Adventure', 'Animation', 'Comedy', 'Crime', 'D
 
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuthContext();
   const [currentStep, setCurrentStep] = useState(1);
   const [isLoading, setIsLoading] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const [movies, setMovies] = useState<Movie[]>([]);
   const [filteredMovies, setFilteredMovies] = useState<Movie[]>([]);
   const [ratings, setRatings] = useState<MovieRating[]>([]);
@@ -128,7 +133,26 @@ const Onboarding: React.FC = () => {
     return rating || { movieId, rating: 0, watched: false };
   };
 
-  const handleContinue = () => {
+  const handleContinue = async () => {
+    if (currentStep === 2) {
+      // Save preferences before continuing
+      setIsSaving(true);
+      try {
+        const token = localStorage.getItem('token');
+        if (token && ratings.length > 0) {
+          const preferencesToSave = ratings
+            .filter(r => r.watched && r.rating > 0)
+            .map(r => ({
+              tmdbId: r.movieId,
+              rating: r.rating,
+              seen: r.watched
+            }));
+          
+          if (preferencesToSave.length > 0) {
+            await userPreferences(token, preferencesToSave);
+            console.log('Preferences saved successfully');
+          }
+        }
     if (currentStep < totalSteps) {
       setCurrentStep(currentStep + 1);
     } else {

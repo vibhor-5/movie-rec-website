@@ -88,3 +88,17 @@ export const getSimilarMovies = async (tmdbId: number): Promise<Movie[]> => {
         throw error;
     }
 };
+
+export const saveUserPreferences = async (preferences: Array<{
+    tmdbId: number;
+    rating: number;
+    seen: boolean;
+}>): Promise<any> => {
+    try {
+        const response = await api.post('/user/preferences', preferences);
+        return response.data;
+    } catch (error) {
+        console.error('Error saving user preferences:', error);
+        throw error;
+    }
+};

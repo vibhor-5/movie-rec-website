@@ -31,5 +31,4 @@ export const userPreferences = async (token:any , preferences:any ) => {
         console.error('Error saving user preferences:', error);
         throw error;
     }
-}
 

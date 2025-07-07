@@ -1,6 +1,3 @@
-import { useState, useCallback } from 'react';
-import { loginUser,resgisterUser } from '../api/auth';
-import { getUserProfile } from '../api/user';
 import axios from 'axios';
 
 const baseURL = import.meta.env.VITE_BACKEND_API_URL || 'http://localhost:3000/'; 
@@ -12,6 +9,60 @@ const api = axios.create({
   timeout: 5000,
 });
 interface User {
+// Add request interceptor to include auth token
+api.interceptors.request.use((config) => {
+  const token = localStorage.getItem('token');
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+export const getUserProfile = async (token: string) => {
+  try {
+    const response = await api.get('/api/auth/profile', {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
+    throw error;
+  }
+};
+
+export const updateUserProfile = async (token: string, userData: any) => {
+  try {
+    const response = await api.put('/api/auth/profile', userData, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    throw error;
+  }
+};
+
+export const changePassword = async (token: string, passwordData: any) => {
+  try {
+    const response = await api.put('/api/auth/change-password', passwordData, {
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error changing password:', error);
+    throw error;
+  }
+};
+
+import { useState, useCallback } from 'react';
+import { loginUser,resgisterUser } from '../api/auth';
+
   id: string;
   name: string;
   email: string;

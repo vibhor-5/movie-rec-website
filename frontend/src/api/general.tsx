@@ -64,4 +64,3 @@ export const getPopularMovies = async (page:number): Promise<Movie[]> =>  {
         console.error('Error fetching popular movies:', error);
         throw error;
     }
-}

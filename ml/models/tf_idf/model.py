@@ -18,7 +18,7 @@ class TFIDFModel:
         self.save_path= save_path
         self.svd_components= svd_components
 
-    def process_data(self, movies: pl.DataFrame, tags: pl.DataFrame) -> pl.DataFrame:
+    def process_data(self, movies: pl.LazyFrame, tags: pl.LazyFrame) -> pl.LazyFrame:
         
         tags = tags.group_by("movie_id").agg(
             pl.col("tag").str.join(",").alias("tags")

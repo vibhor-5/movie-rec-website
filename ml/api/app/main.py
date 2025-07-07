@@ -42,8 +42,7 @@ async def lifespan(app:FastAPI):
     id_dict_rev.clear()
 
 app = FastAPI(lifespan=lifespan)
-
-@app.post("/recommend")
+@app.post("/recommendation")
 async def recommendation(pref: preferences, k: int = 10):
     valid_movie_ids = []
     valid_ratings = []
@@ -61,7 +60,7 @@ async def recommendation(pref: preferences, k: int = 10):
             detail=f"No valid TMDB IDs found. Missing: {missing_ids}"
         )
 
-    recommendation_scores, recommendations = predictor_model.predict(valid_movie_ids, valid_ratings, k)
+    recommendation_scores, recommendations , user_emb = predictor_model.predict(valid_movie_ids, valid_ratings, k)
     recommendations = [
     id_dict_rev.get(x, f"unknown_{x}") for x in recommendations
 ]
@@ -69,7 +68,8 @@ async def recommendation(pref: preferences, k: int = 10):
     return {
         "recommendation_scores": recommendation_scores,
         "recommendations": recommendations,
-        "skipped_tmdb_ids": missing_ids
+        "skipped_tmdb_ids": missing_ids,
+        "user_embedding": user_emb
     }
 
 @app.get("/health")

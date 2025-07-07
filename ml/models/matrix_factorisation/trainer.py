@@ -300,7 +300,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
             
         return test_metrics
     
-    def predict(self, item_ids: torch.Tensor, ratings: torch.Tensor,k:int =10,pos_weight:float =1.0 ) -> Tuple[torch.Tensor, torch.Tensor]:
+    def predict(self, item_ids: torch.Tensor, ratings: torch.Tensor,k:int =10,pos_weight:float =1.0 ) -> Tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         
         self.model.eval()
         item_ids = item_ids.to(self.device)
@@ -323,7 +323,7 @@ class MatrixFactorizationTrainer(RecommenderModel):
         predictions=predictions.view(-1)
         predicted_ids=predicted_ids.view(-1)
 
-        return predictions[:k].cpu(), predicted_ids[:k].cpu()
+        return predictions[:k].cpu(), predicted_ids[:k].cpu(), user_emb.cpu()
     
     def save(self, save_path: str) -> None:
         torch.save(self.model.state_dict(), save_path)

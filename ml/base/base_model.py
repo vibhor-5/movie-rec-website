@@ -37,7 +37,7 @@ class RecommenderModel(ABC):
         pass
 
     @abstractmethod
-    def predict(self,  item_ids: torch.Tensor , ratings: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor]:
+    def predict(self,  item_ids: torch.Tensor , ratings: torch.Tensor) -> tuple[torch.Tensor, torch.Tensor] | tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
         """
         Predict scores for given user and item IDs.
         This method should be implemented by subclasses to define the prediction logic.

@@ -80,6 +80,5 @@ export const getSimilarMovies = async (tmdbId: number) => {
         throw error;
     }
 };
-};
 
 

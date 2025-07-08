@@ -12,38 +12,12 @@ app.post('/user/preferences', authenticateToken, savePreference);
 app.post('/user/onboarding-completed', authenticateToken, markOnboardingCompleted);
 app.get('/genres', getAvailableGenres);
 app.get('/search', search);
-app.get('/api/genre', genreMovieList); //send the genre in Sentencecase
-app.get('/api/popular', getPopularList);//send page number
-app.get('/api/similar', SimilarList);//send tmdbId
+app.get('/api/genre', genreMovieList); // legacy, for backward compatibility
+app.get('/api/popular', getPopularList); // legacy, for backward compatibility
+app.get('/api/similar', SimilarList); // legacy, for backward compatibility
+// Add correct routes for /api/* endpoints
+app.get('/popular', getPopularList); // so /api/popular works when mounted at /api
+app.get('/genre', genreMovieList);   // so /api/genre works when mounted at /api
+app.get('/similar', SimilarList);    // so /api/similar works when mounted at /api
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-// app.get('/test-tmdb', async (req: Request, res: Response) => {
-//     try {
-//         const testResult = await searchMulti('batman', 1);
-//         res.json({
-//             success: true,
-//             message: 'TMDB connection working',
-//             sampleResult: testResult.slice(0, 2) // Just show first 2 results
-//         });
-//     } catch (error) {
-//         const err = error as { message: string; response?: { data: any } };
-//         res.status(500).json({
-//             success: false,
-//             error: err.message,
-//             details: err.response?.data || 'No additional details'
-//         });
-//     }
-// });
 export default app;

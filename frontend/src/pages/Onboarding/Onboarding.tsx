@@ -35,6 +35,12 @@ interface Genre {
   name: string;
 }
 
+// Helper to normalize genre name to Sentencecase
+function normalizeGenreName(name: string): string {
+  if (!name) return name;
+  return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}
+
 const Onboarding: React.FC = () => {
   const navigate = useNavigate();
   const { user } = useAuthContext();
@@ -92,7 +98,8 @@ const Onboarding: React.FC = () => {
     const loadGenres = async () => {
       try {
         const genresData = await getAvailableGenres();
-        setGenres(genresData as Genre[]);
+        // Accepts both array and object { genres: [...] }
+        setGenres(((genresData as any).genres || genresData) as Genre[]);
       } catch (error) {
         console.error("Error loading genres:", error);
         // Fallback to common genres if API fails
@@ -126,26 +133,33 @@ const Onboarding: React.FC = () => {
     const loadMovies = async () => {
       setIsLoading(true);
       try {
-        let moviesData: Movie[] = [];
+        let moviesData: any = [];
 
         if (searchQuery.trim()) {
           // Search movies
-          moviesData = (await searchMovies(searchQuery)) as Movie[];
+          moviesData = await searchMovies(searchQuery);
         } else if (selectedGenre !== "All") {
           // Get movies by genre
-          moviesData = (await getGenreMovies(
-            selectedGenre,
+          moviesData = await getGenreMovies(
+            normalizeGenreName(selectedGenre),
             currentPage
-          )) as Movie[];
+          );
         } else {
           // Get popular movies
-          moviesData = (await getPopularMovies(currentPage)) as Movie[];
+          moviesData = await getPopularMovies(currentPage);
         }
 
-        setMovies(moviesData);
-        setFilteredMovies(moviesData);
+        // Accepts both array and object { results: [...] }
+        const movieList = (moviesData.results || moviesData || []).map((movie: any) => ({
+          ...movie,
+          posterUrl: movie.posterUrl || (movie.posterPath ? `https://image.tmdb.org/t/p/w500/${movie.posterPath}` : null),
+          genre: Array.isArray(movie.genre) ? movie.genre : (movie.genres || []),
+        }));
+        setMovies(movieList);
+        setFilteredMovies(movieList);
       } catch (error) {
         console.error("Error loading movies:", error);
+        alert("Error loading movies: " + ((error as any)?.message || error));
         setMovies([]);
         setFilteredMovies([]);
       } finally {
@@ -358,19 +372,15 @@ const Onboarding: React.FC = () => {
           <button
             key="all"
             onClick={() => setSelectedGenre("All")}
-            className={`${styles.filterButton} ${
-              selectedGenre === "All" ? styles.active : ""
-            }`}
+            className={`${styles.filterButton} ${selectedGenre === "All" ? styles.active : ""}`}
           >
             All
           </button>
           {genres.map((genre) => (
             <button
               key={genre.id}
-              onClick={() => setSelectedGenre(genre.name)}
-              className={`${styles.filterButton} ${
-                selectedGenre === genre.name ? styles.active : ""
-              }`}
+              onClick={() => setSelectedGenre(normalizeGenreName(genre.name))}
+              className={`${styles.filterButton} ${selectedGenre === normalizeGenreName(genre.name) ? styles.active : ""}`}
             >
               {genre.name}
             </button>
@@ -389,21 +399,24 @@ const Onboarding: React.FC = () => {
         </div>
       ) : (
         <div className={styles.movieGrid}>
-          {filteredMovies.map((movie) => {
+          {filteredMovies.map((movie, idx) => {
             const movieRating = getMovieRating(movie.tmdbId);
+            // Try posterUrl, fallback to posterPath (if present), else placeholder
+            let posterSrc = movie.posterUrl;
+            if (!posterSrc && (movie as any).posterPath) {
+              posterSrc = `https://image.tmdb.org/t/p/w500/${(movie as any).posterPath}`;
+            }
             return (
               <div
-                key={movie.tmdbId}
+                key={movie.tmdbId || (movie as any).id || idx}
                 className={`${styles.movieCard} ${
-                  movieRating.watched && movieRating.rating > 0
-                    ? styles.selected
-                    : ""
+                  movieRating.watched && movieRating.rating > 0 ? styles.selected : ""
                 }`}
               >
                 <div className={styles.moviePosterContainer}>
                   <img
                     src={
-                      movie.posterUrl ||
+                      posterSrc ||
                       "https://via.placeholder.com/300x450/1e293b/64748b?text=Movie+Poster"
                     }
                     alt={movie.title}

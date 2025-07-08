@@ -5,11 +5,14 @@ import styles from './RecommendationSection.module.css';
 interface Movie {
   id: number;
   title: string;
-  posterPath: string | null;
+  posterUrl: string | null;
   releaseDate: string;
-  voteAverage: number;
   genres: string[];
   overview: string;
+  voteAverage: number;
+  imdbId?: string | null;
+  tmdbId?: number;
+  year?: number | null;
 }
 
 interface RecommendationSectionProps {
@@ -29,6 +32,22 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
   isLoading = false,
   onMovieSelect
 }) => {
+  // Helper to convert Movie with posterUrl to Movie with posterPath for MovieCard
+  function convertToMovieCard(movie: Movie): any {
+    return {
+      ...movie,
+      posterPath: movie.posterUrl,
+    };
+  }
+
+  // Wrap the onMovieSelect to convert back to the parent Movie type
+  const handleMovieClick = (movie: any) => {
+    if (onMovieSelect) {
+      const { posterPath, ...rest } = movie;
+      onMovieSelect({ ...rest, posterUrl: posterPath });
+    }
+  };
+
   return (
     <div className={styles.container}>
       <section className={styles.section}>
@@ -38,9 +57,9 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
         </p>
         <MovieCarousel
           title="Our Best Picks"
-          movies={hybridMovies}
+          movies={hybridMovies.map(convertToMovieCard)}
           isLoading={isLoading}
-          onMovieClick={onMovieSelect}
+          onMovieClick={handleMovieClick}
         />
       </section>
 
@@ -51,9 +70,9 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
         </p>
         <MovieCarousel
           title="Content-Based Recommendations"
-          movies={contentBasedMovies}
+          movies={contentBasedMovies.map(convertToMovieCard)}
           isLoading={isLoading}
-          onMovieClick={onMovieSelect}
+          onMovieClick={handleMovieClick}
         />
       </section>
 
@@ -64,9 +83,9 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
         </p>
         <MovieCarousel
           title="Collaborative Recommendations"
-          movies={collaborativeMovies}
+          movies={collaborativeMovies.map(convertToMovieCard)}
           isLoading={isLoading}
-          onMovieClick={onMovieSelect}
+          onMovieClick={handleMovieClick}
         />
       </section>
 
@@ -77,9 +96,9 @@ const RecommendationSection: React.FC<RecommendationSectionProps> = ({
         </p>
         <MovieCarousel
           title="Trending Movies"
-          movies={trendingMovies}
+          movies={trendingMovies.map(convertToMovieCard)}
           isLoading={isLoading}
-          onMovieClick={onMovieSelect}
+          onMovieClick={handleMovieClick}
         />
       </section>
     </div>

@@ -14,13 +14,29 @@ interface Movie {
   title: string;
   posterPath: string | null;
   releaseDate: string;
+  voteAverage: number;
   genres: string[];
   overview: string;
-  voteAverage: number;
-  imdbId: string | null;
-  tmdbId: number;
-  year: number | null;
+  year?: number | null;
+  runtime?: number;
+  imdbId?: string | null;
+  tmdbId?: number;
 }
+
+// Helper to map backend movie to frontend MovieCarousel/MovieCard shape
+const mapToCarouselMovie = (movie: any, idx: number = 0) => ({
+  id: movie.tmdbId || movie.id || idx,
+  title: movie.title,
+  posterPath: movie.posterUrl || '',
+  releaseDate: movie.releaseDate || '',
+  voteAverage: movie.voteAverage || 0,
+  genres: movie.genre || movie.genres || [],
+  overview: movie.overview || '',
+  year: movie.year || null,
+  runtime: movie.runtime,
+  imdbId: movie.imdbId || null,
+  tmdbId: movie.tmdbId || null,
+});
 
 const Home: React.FC = () => {
   const { isAuthenticated } = useAuthContext();
@@ -35,8 +51,14 @@ const Home: React.FC = () => {
     const fetchData = async () => {
       setIsLoading(true);
       try {
-        const mockMovies: Movie[] = await getPopularMovies(1);
-        setFeaturedMovies(mockMovies);
+        const response = await getPopularMovies(1);
+        let movieList: any[] = [];
+        if (response && typeof response === 'object' && 'results' in response) {
+          movieList = (response as any).results;
+        } else if (Array.isArray(response)) {
+          movieList = response;
+        }
+        setFeaturedMovies(movieList.map(mapToCarouselMovie));
       } catch (error) {
         console.error('Error fetching data:', error);
       } finally {
@@ -50,25 +72,16 @@ const Home: React.FC = () => {
   useEffect(() => {
     const fetchPersonalizedRecommendations = async () => {
       if (!isAuthenticated) return;
-
       setIsLoadingRecommendations(true);
       try {
         const token = localStorage.getItem('token');
         if (token) {
-          const response = await getRecommendations(token, 10);
-          const transformedRecs = response.data.recommendations.map(movie => ({
-            id: movie.tmdbId,
-            title: movie.title,
-            posterPath: movie.posterUrl,
-            releaseDate: movie.releaseDate || '',
-            genres: movie.genre,
-            overview: movie.overview,
-            voteAverage: movie.voteAverage,
-            imdbId: null,
-            tmdbId: movie.tmdbId,
-            year: movie.year
-          }));
-          setPersonalizedRecommendations(transformedRecs);
+          const response: any = await getRecommendations(token, 10);
+          if (response && response.data && Array.isArray(response.data.recommendations)) {
+            setPersonalizedRecommendations(response.data.recommendations.map(mapToCarouselMovie));
+          } else {
+            setPersonalizedRecommendations([]);
+          }
         }
       } catch (error) {
         console.error('Error fetching personalized recommendations:', error);
@@ -80,8 +93,8 @@ const Home: React.FC = () => {
     fetchPersonalizedRecommendations();
   }, [isAuthenticated]);
 
-  const handleMovieSelect = (movie: Movie) => {
-    setSelectedMovie(movie);
+  const handleMovieSelect = (movie: any) => {
+    setSelectedMovie(mapToCarouselMovie(movie));
     setIsOverlayOpen(true);
   };
 

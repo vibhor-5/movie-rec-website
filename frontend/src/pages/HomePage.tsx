@@ -144,14 +144,32 @@ const HomePage: React.FC = () => {
                     <div className="flex flex-col space-y-3">
                       <div className="h-3 w-32 bg-blue-200 rounded-full"></div>
                       <div className="grid grid-cols-5 gap-3">
-                        {[1, 2, 3, 4, 5].map((poster) => (
-                          <div key={poster} className="aspect-[2/3] bg-blue-100 rounded-md"></div>
+                        {[1, 2, 3, 4, 5].map((poster, idx) => (
+                          <img
+                            key={poster}
+                            src={`https://image.tmdb.org/t/p/w500/$${['qJ2tW6WMUDux911r6m7haRef0WH.jpg','rCzpDGLbOoPwLjy3OAm5NUPOTrC.jpg','6FfCtAuVAW8XJjZ7eWeLibRLWTw.jpg','ynXoOxmDHNQ4UAy0oU6avW71HVW.jpg','d5iIlFn5s0ImszYzBPb8JPIfbXD.jpg'][idx]}`}
+                            alt="Movie Poster"
+                            className="aspect-[2/3] rounded-md object-cover bg-blue-100"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = "https://via.placeholder.com/200x300?text=Movie+Poster";
+                            }}
+                          />
                         ))}
                       </div>
                       <div className="h-3 w-40 bg-blue-200 rounded-full"></div>
                       <div className="grid grid-cols-5 gap-3">
-                        {[1, 2, 3, 4, 5].map((poster) => (
-                          <div key={poster} className="aspect-[2/3] bg-teal-100 rounded-md"></div>
+                        {[1, 2, 3, 4, 5].map((poster, idx) => (
+                          <img
+                            key={poster}
+                            src={`https://image.tmdb.org/t/p/w500/$${['kqjL17yufvn9OVLyXYpvtyrFfak.jpg','vRQnzOn4HjIMX4LBq9nHhFXbsSu.jpg','hNFMawyNDWZKKHU4GYCBz1krsRM.jpg','coss7RgL0NH6g4fC2s5atvf3dFO.jpg','ynXoOxmDHNQ4UAy0oU6avW71HVW.jpg'][idx]}`}
+                            alt="Movie Poster"
+                            className="aspect-[2/3] rounded-md object-cover bg-teal-100"
+                            onError={(e) => {
+                              const target = e.target as HTMLImageElement;
+                              target.src = "https://via.placeholder.com/200x300?text=Movie+Poster";
+                            }}
+                          />
                         ))}
                       </div>
                     </div>

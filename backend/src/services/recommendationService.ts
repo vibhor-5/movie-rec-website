@@ -1,32 +1,35 @@
-import { PrismaClient } from '../generated/prisma';
+import {PrismaClient} from '../generated/prisma';
 import axios from 'axios';
 import { getMovieDetails } from '../utils/tmdb';
 
-const REC_ENG_URL = process.env.REC_ENG_URL || 'http://localhost:8000/';
+const REC_ENG_URL= process.env.REC_ENG_URL || 'http://localhost:8000/';
 const prismaClient = new PrismaClient();
 
 const recEngApi = axios.create({
-  baseURL: REC_ENG_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
+    baseURL: REC_ENG_URL,
+    headers: {
+        'Content-Type': 'application/json',
+    },
 });
 interface Recommendationeresponse {
-  recommendations: number[];
-  recommendation_scores: number[];
-  user_embedding: number[];
+    recommendations: number[];  
+    recommendation_scores: number[];
+    user_embedding: number[];
 }
 export async function getRecommendations(userId: string, limit: number = 10) {
   try {
     const preferences = await prismaClient.userPreference.findMany({
-      where: { userId },
-      select: {
-        movieId: true,
-        rating: true
-      },
+      where: {userId},
+      select: {movieId: true, rating: true},
     });
     if (preferences.length === 0) {
-      throw new Error('No preferences found for the user');
+      // Instead of throwing, return a cold start response
+      return {
+        recommendations: [],
+        user_embedding: [],
+        total_count: 0,
+        isNewUser: true
+      };
     }
     const movie_ids = preferences.map(p => p.movieId);
     const ratings = preferences.map(p => p.rating);
@@ -37,10 +40,10 @@ export async function getRecommendations(userId: string, limit: number = 10) {
 
     // call the recommender service
     const response = await recEngApi.post(`/recommend?k=${limit}`, requestBody);
-
+    
     // Extract user embedding from response
     const { recommendations, recommendation_scores, user_embedding } = response.data as Recommendationeresponse;
-
+    
     // Save user embedding to database
     if (user_embedding && user_embedding.length > 0) {
       await prismaClient.user.update({
@@ -49,7 +52,7 @@ export async function getRecommendations(userId: string, limit: number = 10) {
       });
       console.log(`Updated user ${userId} with collaborative embedding`);
     }
-
+    
     // Fetch movie details for recommendations
     const movieDetails = await prismaClient.movie.findMany({
       where: {
@@ -67,7 +70,7 @@ export async function getRecommendations(userId: string, limit: number = 10) {
         releaseDate: true
       }
     });
-
+    
     // Map recommendations with scores and preserve order, fetching from TMDB if not in DB
     const recommendationsWithDetails = await Promise.all(recommendations.map(async (tmdbId: number, index: number) => {
       let movie = movieDetails.find(m => m.tmdbId === tmdbId);
@@ -87,20 +90,20 @@ export async function getRecommendations(userId: string, limit: number = 10) {
       };
     }));
     const filteredRecommendations = recommendationsWithDetails.filter(Boolean);
-
+    
     return {
       recommendations: filteredRecommendations,
       user_embedding,
       total_count: filteredRecommendations.length
     };
-
-  } catch (error) {
+    
+  } catch(error) {
     console.error('Error fetching recommendations:', error);
     throw new Error('Failed to fetch recommendations');
   }
 }
 
-export async function getTFIDFRecommendations(userId: string, limit: number = 10) {
+export async function getTFIDFRecommendations(userId: string, limit: number = 10) { 
   try {
     // Fetch user preferences
     const preferences = await prismaClient.userPreference.findMany({

@@ -31,13 +31,31 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
-  timeout: 10000,
+  timeout: 30000, // Increased timeout to 30 seconds
 });
+
+// Add request interceptor to include auth token
+api.interceptors.request.use((config) => {
+  if (!config.headers) config.headers = {};
+  const token = localStorage.getItem("token");
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`;
+  }
+  return config;
+});
+
+// Add a helper for error handling
+function parseRecommendationError(error: any): { isNewUser: true } | { error: any } {
+  if (error?.response?.data?.isNewUser) {
+    return { isNewUser: true };
+  }
+  return { error };
+}
 
 export const getRecommendations = async (
   token: string,
   limit: number = 10
-): Promise<RecommendationResponse> => {
+): Promise<RecommendationResponse | { isNewUser: true } | { error: any }> => {
   try {
     const response = await api.post<RecommendationResponse>(
       "/recommendations",
@@ -51,8 +69,7 @@ export const getRecommendations = async (
     );
     return response.data;
   } catch (error) {
-    console.error("Error fetching recommendations:", error);
-    throw error;
+    return parseRecommendationError(error);
   }
 };
 export const getTFIDFRecommendations = async (

@@ -1,7 +1,7 @@
 import axios from "axios";
 
 const baseURL =
-  (import.meta.env.VITE_BACKEND_API_URL || "http://localhost:3000") + "/api";
+  import.meta.env.VITE_BACKEND_API_URL || "http://localhost:3000";
 
 const api = axios.create({
   baseURL: baseURL,
@@ -21,6 +21,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+// Save user preferences (Protected)
 export const userPreferences = async (token: any, preferences: any) => {
   try {
     const response = await api.post("/user/preferences", preferences, {
@@ -35,6 +36,18 @@ export const userPreferences = async (token: any, preferences: any) => {
   }
 };
 
+// Get available genres
+export const getAvailableGenres = async () => {
+  try {
+    const response = await api.get("/genres");
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching genres:", error);
+    throw error;
+  }
+};
+
+// Search movies
 export const searchMovies = async (query: string) => {
   try {
     const response = await api.get("/search", {
@@ -47,9 +60,10 @@ export const searchMovies = async (query: string) => {
   }
 };
 
+// Get movies by genre
 export const getGenreMovies = async (genre: string, page: number = 1) => {
   try {
-    const response = await api.get("/genre", {
+    const response = await api.get("/api/genre", {
       params: { genre, page },
     });
     return response.data;
@@ -59,9 +73,10 @@ export const getGenreMovies = async (genre: string, page: number = 1) => {
   }
 };
 
+// Get popular movies
 export const getPopularMovies = async (page: number = 1) => {
   try {
-    const response = await api.get("/popular", {
+    const response = await api.get("/api/popular", {
       params: { page },
     });
     return response.data;
@@ -71,9 +86,10 @@ export const getPopularMovies = async (page: number = 1) => {
   }
 };
 
+// Get similar movies
 export const getSimilarMovies = async (tmdbId: number) => {
   try {
-    const response = await api.get("/similar", {
+    const response = await api.get("/api/similar", {
       params: { tmdbId },
     });
     return response.data;
@@ -83,6 +99,7 @@ export const getSimilarMovies = async (tmdbId: number) => {
   }
 };
 
+// Mark onboarding as completed (Protected)
 export const markOnboardingCompleted = async (token: string) => {
   try {
     const response = await api.post(
@@ -97,16 +114,6 @@ export const markOnboardingCompleted = async (token: string) => {
     return response.data;
   } catch (error) {
     console.error("Error marking onboarding as completed:", error);
-    throw error;
-  }
-};
-
-export const getAvailableGenres = async () => {
-  try {
-    const response = await api.get("/genres");
-    return response.data;
-  } catch (error) {
-    console.error("Error fetching genres:", error);
     throw error;
   }
 };
